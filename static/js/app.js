@@ -7,28 +7,56 @@ let currentLocation = null;
 let markers = [];
 
 // Initialize the application
-document.addEventListener('DOMContentLoaded', function () {
-    // Check if user is logged in
-    const storedUserId = localStorage.getItem('userId');
-    const storedUsername = localStorage.getItem('username');
-
-    if (storedUserId && storedUsername) {
-        userId = storedUserId;
-        username = storedUsername;
-        document.getElementById('usernameDisplay').textContent = username;
-        document.getElementById('loginModal').style.display = 'none';
-        initMap();
-    } else {
+document.addEventListener('DOMContentLoaded', async function () {
+    // Check if user is logged in (session-based)
+    try {
+        const response = await fetch('/api/current_user');
+        if (response.ok) {
+            const data = await response.json();
+            userId = data.user_id;
+            username = data.username;
+            document.getElementById('usernameDisplay').textContent = username;
+            document.getElementById('loginModal').style.display = 'none';
+            initMap();
+        } else {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+    } catch (error) {
         document.getElementById('loginModal').style.display = 'flex';
     }
 });
 
-// Login function
-async function login() {
-    const usernameInput = document.getElementById('usernameInput').value.trim();
+// Switch between login and signup
+function switchAuthMode(mode) {
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+    const loginTab = document.getElementById('loginTab');
+    const signupTab = document.getElementById('signupTab');
+    const authMessage = document.getElementById('authMessage');
 
-    if (!usernameInput) {
-        alert('Please enter a username');
+    authMessage.innerHTML = '';
+
+    if (mode === 'login') {
+        loginForm.style.display = 'block';
+        signupForm.style.display = 'none';
+        loginTab.classList.add('active');
+        signupTab.classList.remove('active');
+    } else {
+        loginForm.style.display = 'none';
+        signupForm.style.display = 'block';
+        loginTab.classList.remove('active');
+        signupTab.classList.add('active');
+    }
+}
+
+// Perform login
+async function performLogin() {
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const messageEl = document.getElementById('authMessage');
+
+    if (!email || !password) {
+        messageEl.innerHTML = '<span class="error">Please enter email and password</span>';
         return;
     }
 
@@ -38,7 +66,7 @@ async function login() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ username: usernameInput })
+            body: JSON.stringify({ email, password })
         });
 
         const data = await response.json();
@@ -47,9 +75,63 @@ async function login() {
             userId = data.user_id;
             username = data.username;
 
-            // Store in localStorage
-            localStorage.setItem('userId', userId);
-            localStorage.setItem('username', username);
+            // Update UI
+            document.getElementById('usernameDisplay').textContent = username;
+            document.getElementById('loginModal').style.display = 'none';
+
+            // Initialize map
+            initMap();
+        } else {
+            messageEl.innerHTML = `<span class="error">${data.error}</span>`;
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        messageEl.innerHTML = '<span class="error">Login failed. Please try again.</span>';
+    }
+}
+
+// Perform signup
+async function performSignup() {
+    const signupUsername = document.getElementById('signupUsername').value.trim();
+    const signupEmail = document.getElementById('signupEmail').value.trim();
+    const signupPassword = document.getElementById('signupPassword').value;
+    const confirmPassword = document.getElementById('signupConfirmPassword').value;
+    const messageEl = document.getElementById('authMessage');
+
+    if (!signupUsername || !signupEmail || !signupPassword || !confirmPassword) {
+        messageEl.innerHTML = '<span class="error">Please fill in all fields</span>';
+        return;
+    }
+
+    if (signupPassword !== confirmPassword) {
+        messageEl.innerHTML = '<span class="error">Passwords do not match</span>';
+        return;
+    }
+
+    if (signupPassword.length < 6) {
+        messageEl.innerHTML = '<span class="error">Password must be at least 6 characters</span>';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: signupUsername,
+                email: signupEmail,
+                password: signupPassword
+            })
+        });
+
+        const data = await response.json();
+
+        // Check for successful response (200-299 status codes)
+        if (response.ok) {
+            userId = data.user_id;
+            username = data.username;
 
             // Update UI
             document.getElementById('usernameDisplay').textContent = username;
@@ -58,19 +140,21 @@ async function login() {
             // Initialize map
             initMap();
         } else {
-            alert('Login failed: ' + data.error);
+            messageEl.innerHTML = `<span class="error">${data.error}</span>`;
         }
     } catch (error) {
-        console.error('Login error:', error);
-        alert('Login failed. Please try again.');
+        console.error('Signup error:', error);
+        messageEl.innerHTML = '<span class="error">Signup failed. Please try again.</span>';
     }
 }
 
 // Logout function
-function logout() {
-    // Clear localStorage
-    localStorage.removeItem('userId');
-    localStorage.removeItem('username');
+async function logout() {
+    try {
+        await fetch('/api/logout', { method: 'POST' });
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
 
     // Reset variables
     userId = null;
@@ -79,6 +163,7 @@ function logout() {
     // Reload the page to show login modal
     window.location.reload();
 }
+
 
 // Initialize Leaflet map
 function initMap() {

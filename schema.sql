@@ -6,7 +6,9 @@ CREATE EXTENSION IF NOT EXISTS "postgis";
 -- Users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    username TEXT NOT NULL UNIQUE,
+    username TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    password_hash TEXT NOT NULL,
     phone TEXT,
     fcm_token TEXT,
     created_at TIMESTAMP DEFAULT NOW()

@@ -3,7 +3,9 @@ New Haven Hangouts - Flask Backend
 A location-based social app for checking in and meeting friends
 """
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, session
+from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 from supabase import create_client, Client
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -14,11 +16,38 @@ import uuid
 load_dotenv()
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Initialize Supabase client
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Initialize Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+login_manager.login_view = 'index'
+
+
+# User class for Flask-Login
+class User(UserMixin):
+    def __init__(self, id, username, email):
+        self.id = id
+        self.username = username
+        self.email = email
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    try:
+        response = supabase.table('users').select('*').eq('id', user_id).execute()
+        if response.data and len(response.data) > 0:
+            user_data = response.data[0]
+            return User(user_data['id'], user_data['username'], user_data['email'])
+    except Exception as e:
+        print(f"Error loading user: {e}")
+    return None
+
 
 
 # ==================== ROUTES ====================
@@ -29,39 +58,120 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/api/login', methods=['POST'])
-def login():
+@app.route('/friends')
+def friends_page():
+    """Serve the friends page"""
+    return render_template('friends.html')
+
+
+@app.route('/api/signup', methods=['POST'])
+def signup():
     """
-    Mock login endpoint for MVP
-    Accepts: { "username": "Ellen" }
-    Returns: { "user_id": "uuid", "username": "Ellen" }
+    User signup endpoint
+    Accepts: { "username": "Ellen", "email": "ellen@example.com", "password": "password123" }
+    Returns: { "user_id": "uuid", "username": "Ellen", "email": "ellen@example.com" }
     """
     try:
         data = request.json
         username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
         
-        if not username:
-            return jsonify({'error': 'Username required'}), 400
+        if not all([username, email, password]):
+            return jsonify({'error': 'Username, email, and password required'}), 400
         
-        # Check if user exists
-        response = supabase.table('users').select('*').eq('username', username).execute()
+        # Check if user exists with this email
+        response = supabase.table('users').select('*').eq('email', email).execute()
         
         if response.data and len(response.data) > 0:
-            user = response.data[0]
+            return jsonify({'error': 'Email already registered'}), 400
+        
+        # Hash password
+        password_hash = generate_password_hash(password)
+        
+        # Create new user
+        new_user = supabase.table('users').insert({
+            'username': username,
+            'email': email,
+            'password_hash': password_hash
+        }).execute()
+        
+        if new_user.data and len(new_user.data) > 0:
+            user_data = new_user.data[0]
+            user = User(user_data['id'], user_data['username'], user_data['email'])
+            login_user(user)
+            
+            return jsonify({
+                'user_id': user_data['id'],
+                'username': user_data['username'],
+                'email': user_data['email']
+            }), 201
         else:
-            # Create new user
-            new_user = supabase.table('users').insert({
-                'username': username
-            }).execute()
-            user = new_user.data[0]
+            return jsonify({'error': 'Failed to create user'}), 500
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    """
+    User login endpoint
+    Accepts: { "email": "ellen@example.com", "password": "password123" }
+    Returns: { "user_id": "uuid", "username": "Ellen", "email": "ellen@example.com" }
+    """
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        
+        if not all([email, password]):
+            return jsonify({'error': 'Email and password required'}), 400
+        
+        # Check if user exists
+        response = supabase.table('users').select('*').eq('email', email).execute()
+        
+        if not response.data or len(response.data) == 0:
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        user_data = response.data[0]
+        
+        # Verify password
+        if not check_password_hash(user_data['password_hash'], password):
+            return jsonify({'error': 'Invalid email or password'}), 401
+        
+        # Log in user
+        user = User(user_data['id'], user_data['username'], user_data['email'])
+        login_user(user)
         
         return jsonify({
-            'user_id': user['id'],
-            'username': user['username']
+            'user_id': user_data['id'],
+            'username': user_data['username'],
+            'email': user_data['email']
         }), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/logout', methods=['POST'])
+@login_required
+def api_logout():
+    """Logout the current user"""
+    logout_user()
+    return jsonify({'success': True}), 200
+
+
+@app.route('/api/current_user', methods=['GET'])
+def get_current_user():
+    """Get current logged-in user"""
+    if current_user.is_authenticated:
+        return jsonify({
+            'user_id': current_user.id,
+            'username': current_user.username,
+            'email': current_user.email
+        }), 200
+    return jsonify({'error': 'Not authenticated'}), 401
 
 
 @app.route('/api/checkin', methods=['POST'])
@@ -299,7 +409,206 @@ def delete_checkin(checkin_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ==================== FRIENDS ROUTES ====================
+
+@app.route('/api/friends/add', methods=['POST'])
+@login_required
+def add_friend():
+    """
+    Send a friend request by email
+    Accepts: { "friend_email": "friend@example.com" }
+    """
+    try:
+        data = request.json
+        friend_email = data.get('friend_email')
+        
+        if not friend_email:
+            return jsonify({'error': 'Friend email required'}), 400
+        
+        # Find the friend by email
+        friend_response = supabase.table('users').select('*').eq('email', friend_email).execute()
+        
+        if not friend_response.data or len(friend_response.data) == 0:
+            return jsonify({'error': 'User with that email not found'}), 404
+        
+        friend = friend_response.data[0]
+        friend_id = friend['id']
+        
+        # Can't add yourself
+        if friend_id == current_user.id:
+            return jsonify({'error': 'Cannot add yourself as a friend'}), 400
+        
+        # Check if friendship already exists
+        existing = supabase.table('friendships').select('*').eq(
+            'user_id', current_user.id
+        ).eq('friend_id', friend_id).execute()
+        
+        if existing.data and len(existing.data) > 0:
+            status = existing.data[0]['status']
+            if status == 'pending':
+                return jsonify({'error': 'Friend request already pending'}), 400
+            elif status == 'accepted':
+                return jsonify({'error': 'Already friends'}), 400
+        
+        # Check if the reverse friendship exists (they added you)
+        reverse = supabase.table('friendships').select('*').eq(
+            'user_id', friend_id
+        ).eq('friend_id', current_user.id).execute()
+        
+        if reverse.data and len(reverse.data) > 0:
+            # If they sent you a request, this should accept it instead
+            if reverse.data[0]['status'] == 'pending':
+                # Accept their request
+                supabase.table('friendships').update({
+                    'status': 'accepted'
+                }).eq('user_id', friend_id).eq('friend_id', current_user.id).execute()
+                
+                # Create the reverse friendship
+                supabase.table('friendships').insert({
+                    'user_id': current_user.id,
+                    'friend_id': friend_id,
+                    'status': 'accepted'
+                }).execute()
+                
+                return jsonify({
+                    'success': True,
+                    'message': f'You are now friends with {friend["username"]}!'
+                }), 201
+        
+        # Create friend request
+        supabase.table('friendships').insert({
+            'user_id': current_user.id,
+            'friend_id': friend_id,
+            'status': 'pending'
+        }).execute()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Friend request sent to {friend["username"]}'
+        }), 201
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/friends/requests', methods=['GET'])
+@login_required
+def get_friend_requests():
+    """Get pending friend requests for current user"""
+    try:
+        # Get pending requests where you are the friend
+        requests_response = supabase.table('friendships').select(
+            '*, users!friendships_user_id_fkey(id, username, email)'
+        ).eq('friend_id', current_user.id).eq('status', 'pending').execute()
+        
+        requests = [
+            {
+                'request_id': req['user_id'],
+                'user_id': req['users']['id'],
+                'username': req['users']['username'],
+                'email': req['users']['email'],
+                'created_at': req['created_at']
+            }
+            for req in requests_response.data
+        ]
+        
+        return jsonify({'requests': requests}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/friends/accept', methods=['POST'])
+@login_required
+def accept_friend_request():
+    """
+    Accept a friend request
+    Accepts: { "user_id": "uuid" }
+    """
+    try:
+        data = request.json
+        requester_id = data.get('user_id')
+        
+        if not requester_id:
+            return jsonify({'error': 'user_id required'}), 400
+        
+        # Update the original request to accepted
+        supabase.table('friendships').update({
+            'status': 'accepted'
+        }).eq('user_id', requester_id).eq('friend_id', current_user.id).execute()
+        
+        # Create the reverse friendship
+        supabase.table('friendships').insert({
+            'user_id': current_user.id,
+            'friend_id': requester_id,
+            'status': 'accepted'
+        }).execute()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Friend request accepted'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/friends/reject', methods=['POST'])
+@login_required
+def reject_friend_request():
+    """
+    Reject a friend request
+    Accepts: { "user_id": "uuid" }
+    """
+    try:
+        data = request.json
+        requester_id = data.get('user_id')
+        
+        if not requester_id:
+            return jsonify({'error': 'user_id required'}), 400
+        
+        # Delete the friend request
+        supabase.table('friendships').delete().eq(
+            'user_id', requester_id
+        ).eq('friend_id', current_user.id).execute()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Friend request rejected'
+        }), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/friends', methods=['GET'])
+@login_required
+def get_friends():
+    """Get list of accepted friends for current user"""
+    try:
+        # Get accepted friendships
+        friends_response = supabase.table('friendships').select(
+            '*, users!friendships_friend_id_fkey(id, username, email)'
+        ).eq('user_id', current_user.id).eq('status', 'accepted').execute()
+        
+        friends = [
+            {
+                'user_id': friend['users']['id'],
+                'username': friend['users']['username'],
+                'email': friend['users']['email']
+            }
+            for friend in friends_response.data
+        ]
+        
+        return jsonify({'friends': friends}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 # For Vercel, the app object is imported directly
-# For local development, uncomment the lines below:
-# if __name__ == '__main__':
-#     app.run(debug=True, host='0.0.0.0', port=8000)
+# For local development:
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=8000)

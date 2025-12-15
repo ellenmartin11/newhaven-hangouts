@@ -23,9 +23,12 @@
         <header class="header">
             <div class="header-content">
                 <h1 class="app-title">New Haven Hangouts!</h1>
-                <div class="user-info" id="userInfo">
-                    <span id="usernameDisplay">Guest</span>
-                    <button class="btn-logout" onclick="logout()" title="Logout">🚪</button>
+                <div class="header-right">
+                    <a href="/friends" class="btn btn-friends">👥 Friends</a>
+                    <div class="user-info" id="userInfo">
+                        <span id="usernameDisplay">Guest</span>
+                        <button class="btn-logout" onclick="logout()" title="Logout">🚪</button>
+                    </div>
                 </div>
             </div>
         </header>
@@ -33,10 +36,29 @@
         <!-- Login Modal -->
         <div class="modal" id="loginModal">
             <div class="modal-content">
-                <h2>Welcome!</h2>
-                <p>Enter your name to get started</p>
-                <input type="text" id="usernameInput" placeholder="Your username" />
-                <button class="btn btn-primary" onclick="login()">Start Hanging</button>
+                <h2 id="modalTitle">Welcome!</h2>
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="loginTab" onclick="switchAuthMode('login')">Login</button>
+                    <button class="auth-tab" id="signupTab" onclick="switchAuthMode('signup')">Sign Up</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginForm" class="auth-form">
+                    <input type="email" id="loginEmail" placeholder="Email" />
+                    <input type="password" id="loginPassword" placeholder="Password" />
+                    <button class="btn btn-primary" onclick="performLogin()">Login</button>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signupForm" class="auth-form" style="display: none;">
+                    <input type="text" id="signupUsername" placeholder="Username" />
+                    <input type="email" id="signupEmail" placeholder="Email" />
+                    <input type="password" id="signupPassword" placeholder="Password" />
+                    <input type="password" id="signupConfirmPassword" placeholder="Confirm Password" />
+                    <button class="btn btn-primary" onclick="performSignup()">Sign Up</button>
+                </div>
+
+                <div id="authMessage" class="auth-message"></div>
             </div>
         </div>
 

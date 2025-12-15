@@ -4,9 +4,14 @@ A mobile-first location-based social application where users can check in to loc
 
 ## ✨ Features
 
+- 🔐 **Email Authentication**: Secure signup and login with email and password
+- 👥 **Friends System**: Add friends by email, accept/reject friend requests
 - 📍 **Location Check-ins**: Share your current location with friends
+- 🔍 **Location Search**: Search for places in New Haven with autocomplete
 - 🗺️ **Interactive Map**: View friend check-ins on an OpenStreetMap-powered interface
+- 📋 **List View**: Alternative list view for check-ins
 - 🎉 **"I'm Coming" Feature**: Let friends know you're joining them
+- 👥 **Attendee Tracking**: See who's coming to each check-in
 - ⏰ **Expiring Check-ins**: Check-ins automatically expire after a set duration
 - 📱 **Mobile-First Design**: Optimized for mobile browsers with responsive design
 
@@ -77,14 +82,20 @@ The application will be available at `http://localhost:5000`
 
 ## 📱 Usage
 
-1. **First-time Login**: Enter a username to create your account
-2. **Check In**: 
+1. **Sign Up / Login**: 
+   - Create a new account with username, email, and password
+   - Or login with existing credentials
+2. **Add Friends**:
+   - Click the "Friends" button in the header
+   - Enter a friend's email address to send a friend request
+   - Accept or reject incoming friend requests
+3. **Check In**: 
    - Click the "Check In" button
-   - Allow location access when prompted
-   - Enter a location name and optional message
+   - Search for a location or use your current GPS location
+   - Enter an optional message
    - Select how long you'll be there
-3. **View Friends**: See your friends' check-ins as markers on the map
-4. **Join Friends**: Click on a marker and press "I'm Coming!" to notify them
+4. **View Friends**: Switch between Map and List views to see your friends' check-ins
+5. **Join Friends**: Click "I'm Coming!" to notify them you're coming
 
 ## 🌐 Deployment to Vercel
 
@@ -121,9 +132,9 @@ WHERE u1.username = 'Ellen' AND u2.username = 'Sam';
 
 ## 📊 Database Schema
 
-- **users**: User accounts with username and notification tokens
+- **users**: User accounts with username, email, and password hash
 - **friendships**: Friend relationships with status (pending/accepted/rejected)
-- **checkins**: Location check-ins with PostGIS geometry
+- **checkins**: Location check-ins with PostGIS geometry and expiration time
 - **attendees**: Tracks who's coming to each check-in
 
 ## 🎨 Customization
@@ -150,18 +161,26 @@ L.tileLayer('YOUR_TILE_URL', {
 
 ## 🔒 Security Notes
 
-- This is an MVP and uses a simplified login system
-- For production, implement proper authentication (e.g., Supabase Auth, OAuth)
-- Add rate limiting to prevent API abuse
-- Validate and sanitize all user inputs
-- Use HTTPS in production
+- Email/password authentication with bcrypt password hashing
+- Flask-Login for session management
+- For production:
+  - Use a strong SECRET_KEY (generate with `python -c "import secrets; print(secrets.token_hex(32))"`)
+  - Enable HTTPS
+  - Add rate limiting to prevent API abuse
+  - Consider adding email verification
+  - Implement CSRF protection
 
 ## 🚧 Future Enhancements
 
-- [ ] Real authentication with Supabase Auth
+- [x] Email/password authentication
+- [x] Friend request system
+- [x] Location search
+- [x] List view for check-ins
+- [x] Attendee tracking
 - [ ] Push notifications via FCM
-- [ ] Friend request system
 - [ ] Check-in photos
+- [ ] Email verification
+- [ ] Password reset functionality
 - [ ] Activity feed/timeline
 - [ ] Search for locations
 - [ ] Private/public check-ins

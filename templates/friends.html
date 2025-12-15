@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friends - New Haven HangOut</title>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="header-left">
+                    <a href="/" class="back-link">← Back to Map</a>
+                </div>
+                <h1 class="app-title">Friends</h1>
+                <div class="user-info" id="userInfo">
+                    <span id="usernameDisplay">Guest</span>
+                    <button class="btn-logout" onclick="logout()" title="Logout">🚪</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="friends-page">
+            <!-- Add Friend Section -->
+            <section class="friends-section">
+                <h2>Add Friend</h2>
+                <div class="add-friend-form">
+                    <input type="email" id="friendEmailInput" placeholder="Enter friend's email address"
+                        onkeypress="if(event.key === 'Enter') addFriend()" />
+                    <button class="btn btn-primary" onclick="addFriend()">Add Friend</button>
+                </div>
+                <div id="addFriendMessage" class="message-container"></div>
+            </section>
+
+            <!-- Pending Requests Section -->
+            <section class="friends-section">
+                <h2>Friend Requests <span class="badge" id="requestsBadge">0</span></h2>
+                <div id="friendRequests" class="friend-requests-list">
+                    <p class="empty-state">No pending friend requests</p>
+                </div>
+            </section>
+
+            <!-- Friends List Section -->
+            <section class="friends-section">
+                <h2>My Friends <span class="badge" id="friendsBadge">0</span></h2>
+                <div id="friendsList" class="friends-list">
+                    <p class="empty-state">No friends yet. Add some friends to get started!</p>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/friends.js') }}"></script>
+</body>
+
+</html>
