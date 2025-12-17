@@ -60,6 +60,7 @@ body {
     border-bottom: 1px solid var(--glass-border);
     color: var(--text-primary);
     padding: 1.25rem 1.5rem;
+    padding-top: calc(1.25rem + env(safe-area-inset-top));
     box-shadow: var(--shadow-soft);
     z-index: 1000;
 }

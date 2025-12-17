@@ -40,13 +40,12 @@ class User(UserMixin):
 
 @login_manager.user_loader
 def load_user(user_id):
-    try:
-        response = supabase.table('users').select('*').eq('id', user_id).execute()
-        if response.data and len(response.data) > 0:
-            user_data = response.data[0]
-            return User(user_data['id'], user_data['username'], user_data['email'])
-    except Exception as e:
-        print(f"Error loading user: {e}")
+    # Don't wrap in try/except to avoid silencing DB errors
+    # If DB is down, we want 500, not to log the user out!
+    response = supabase.table('users').select('*').eq('id', user_id).execute()
+    if response.data and len(response.data) > 0:
+        user_data = response.data[0]
+        return User(user_data['id'], user_data['username'], user_data['email'])
     return None
 
 
