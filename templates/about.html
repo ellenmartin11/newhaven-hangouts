@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - New Haven HangOut</title>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        .about-container {
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f1ed 0%, #ede8e3 100%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .about-content {
+            flex: 1;
+            display: flex;
+            padding: 2rem 2rem 3rem 2rem;
+            overflow-y: auto;
+        }
+
+        .about-card {
+            background: var(--bg-card);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--glass-border);
+            border-radius: 32px;
+            padding: 3rem;
+            max-width: 700px;
+            width: 100%;
+            box-shadow: var(--shadow-strong);
+            animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: auto;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .about-emoji {
+            font-size: 4rem;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .about-card h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            letter-spacing: -1px;
+            text-align: center;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .about-card p {
+            font-size: 1.125rem;
+            line-height: 1.8;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .highlight {
+            font-weight: 600;
+            background: var(--accent-soft);
+            padding: 0.125rem 0.5rem;
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+
+        .feature-list {
+            background: rgba(255, 154, 108, 0.08);
+            border-left: 4px solid #ff9a6c;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .feature-list h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 0.875rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .feature-icon {
+            font-size: 1.25rem;
+            margin-top: 0.125rem;
+            flex-shrink: 0;
+        }
+
+        .cta-section {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(141, 141, 141, 0.15);
+        }
+
+        .cta-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-back {
+            background: var(--accent-warm);
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: var(--shadow-soft);
+            text-decoration: none;
+            display: inline-block;
+            font-family: inherit;
+            letter-spacing: -0.3px;
+        }
+
+        .btn-back:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .btn-back:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            .about-content {
+                padding: 1.5rem 1.5rem 2.5rem 1.5rem;
+            }
+
+            .about-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .about-card h1 {
+                font-size: 2rem;
+            }
+
+            .about-card p {
+                font-size: 1rem;
+            }
+
+            .about-emoji {
+                font-size: 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="about-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="app-title">New Haven Hangouts!</h1>
+                <div class="header-right">
+                    <a href="/" class="btn btn-friends">🏠 Home</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- About Content -->
+        <div class="about-content">
+            <div class="about-card">
+                <div class="about-emoji">👋</div>
+
+                <h1>About This App</h1>
+
+                <p>
+                    This app was created to encourage people to <span class="highlight">hang out with friends IRL</span>
+                    in their local town or city!
+                </p>
+
+                <p>
+                    <strong>Here's how it works:</strong> Check in somewhere if you'd be happy for a friend to join in.
+                    Your friends can see where you are and come meet up with you!
+                </p>
+
+                <div class="feature-list">
+                    <h3>🚀 Future Features Coming Soon</h3>
+                    <div class="feature-item">
+                        <span class="feature-icon">📊</span>
+                        <span>Track your number of check-ins over time</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">⭐</span>
+                        <span>Save your favorite places to check in</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🎯</span>
+                        <span>Discover popular hangout spots in your area</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">🏆</span>
+                        <span>Earn badges for being a social butterfly</span>
+                    </div>
+                    <div class="feature-item">
+                        <span class="feature-icon">✨</span>
+                        <span>And much more!</span>
+                    </div>
+                </div>
+
+                <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 0;">
+                    For now, it's just a <span class="highlight">super simple browser app</span> — but we're working
+                    hard
+                    to make it even better!
+                </p>
+
+                <div class="cta-section">
+                    <p class="cta-text">Ready to start hanging out? 🎉</p>
+                    <a href="/" class="btn-back">Start Checking In</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -64,6 +64,18 @@ def friends_page():
     return render_template('friends.html')
 
 
+@app.route('/about')
+def about_page():
+    """Serve the about page"""
+    return render_template('about.html')
+
+
+@app.route('/stats')
+def stats_page():
+    """Serve the stats page"""
+    return render_template('stats.html')
+
+
 @app.route('/api/signup', methods=['POST'])
 def signup():
     """
@@ -172,6 +184,64 @@ def get_current_user():
             'email': current_user.email
         }), 200
     return jsonify({'error': 'Not authenticated'}), 401
+
+
+@app.route('/api/stats/user', methods=['GET'])
+@login_required
+def get_user_stats():
+    """
+    Get stats for the current user and community
+    Returns: {
+        "total_checkins": 15,
+        "favorite_places": [{"location_name": "Koffee", "count": 5}, ...],
+        "community_top_place": {"location_name": "The Stack", "count": 42}
+    }
+    """
+    try:
+        # 1. Total Check-ins for current user
+        total_response = supabase.table('checkins').select('*', count='exact').eq('user_id', current_user.id).execute()
+        total_checkins = total_response.count if total_response.count is not None else len(total_response.data)
+        
+        # 2. Favorite Places for current user (Client-side aggregation required if no advanced SQL view)
+        # Note: Supabase JS/store procedures are ideal, but for now we fetch user's checkins and aggregate in Python
+        # Fetch only location names for efficiency
+        # Using a limit of 1000 for now, ideally we'd paginate or use a specialized query
+        user_checkins_response = supabase.table('checkins').select('location_name').eq('user_id', current_user.id).limit(1000).execute()
+        
+        from collections import Counter
+        user_locations = [c['location_name'] for c in user_checkins_response.data]
+        user_location_counts = Counter(user_locations)
+        favorite_places = [
+            {'location_name': loc, 'count': count}
+            for loc, count in user_location_counts.most_common(3)
+        ]
+        
+        # 3. Community Top Place
+        # Fetch all checkins (limited) or create a DB view. For MVP, we'll fetch a batch.
+        # Ideally: Create a Postgres VIEW for this. 
+        # Fallback: Fetch last N global checkins and aggregate, or reliance on a future View.
+        # Let's try to fetch checkins and aggregate in Python for now (MVP scale).
+        all_checkins_response = supabase.table('checkins').select('location_name').limit(2000).execute()
+        all_locations = [c['location_name'] for c in all_checkins_response.data]
+        all_location_counts = Counter(all_locations)
+        top_place_data = all_location_counts.most_common(1)
+        
+        community_top_place = None
+        if top_place_data:
+            community_top_place = {
+                'location_name': top_place_data[0][0],
+                'count': top_place_data[0][1]
+            }
+            
+        return jsonify({
+            'total_checkins': total_checkins,
+            'favorite_places': favorite_places,
+            'community_top_place': community_top_place
+        }), 200
+        
+    except Exception as e:
+        print(f"Error fetching stats: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/checkin', methods=['POST'])
