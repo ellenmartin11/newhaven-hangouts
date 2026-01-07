@@ -47,6 +47,44 @@ function switchAuthMode(mode) {
         loginTab.classList.remove('active');
         signupTab.classList.add('active');
     }
+    document.getElementById('forgotPasswordForm').style.display = 'none';
+}
+
+function showForgotPassword() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('signupForm').style.display = 'none';
+    document.getElementById('forgotPasswordForm').style.display = 'block';
+    document.getElementById('authMessage').innerHTML = '';
+}
+
+async function requestPasswordReset() {
+    const email = document.getElementById('forgotEmail').value.trim();
+    const messageEl = document.getElementById('authMessage');
+
+    if (!email) {
+        messageEl.innerHTML = '<span class="error">Please enter your email</span>';
+        return;
+    }
+
+    messageEl.innerHTML = '<span style="color: var(--text-secondary);">Sending...</span>';
+
+    try {
+        const response = await fetch('/api/auth/reset-password-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            messageEl.innerHTML = `<span style="color: green;">${data.message}</span>`;
+        } else {
+            messageEl.innerHTML = `<span class="error">${data.error}</span>`;
+        }
+    } catch (error) {
+        messageEl.innerHTML = '<span class="error">Request failed. Try again.</span>';
+    }
 }
 
 // Perform login
@@ -400,6 +438,11 @@ function formatRemainingTime(expiresAt) {
 function showCheckinForm() {
     document.getElementById('checkinForm').style.display = 'block';
 
+    // Load friends for selection if not already loaded
+    if (document.getElementById('friendsCheckboxes').children.length <= 1) {
+        loadFriendsForSelection();
+    }
+
     // Try to get current location in background (optional now)
     if (!currentLocation && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -414,6 +457,46 @@ function showCheckinForm() {
             }
         );
     }
+}
+
+let cachedFriends = [];
+
+async function loadFriendsForSelection() {
+    const container = document.getElementById('friendsCheckboxes');
+    try {
+        const response = await fetch('/api/friends');
+        const data = await response.json();
+
+        if (response.ok) {
+            cachedFriends = data.friends;
+            if (cachedFriends.length === 0) {
+                container.innerHTML = '<p class="no-checkins">You have no friends yet to share with!</p>';
+                return;
+            }
+
+            container.innerHTML = cachedFriends.map(friend => `
+                    <label class="friend-checkbox-item">
+                        <input type="checkbox" 
+                               name="friend_share" 
+                               value="${friend.user_id}" 
+                               class="friend-check">
+                        <span class="friend-name-text">${friend.username}</span>
+                    </label>
+                `).join('');
+        }
+    } catch (error) {
+        container.innerHTML = '<p class="error">Failed to load friends.</p>';
+    }
+}
+
+function toggleFriendList(show) {
+    const list = document.getElementById('friendSelectionList');
+    list.style.display = show ? 'block' : 'none';
+}
+
+function toggleSelectAllFriends(source) {
+    const checkboxes = document.querySelectorAll('.friend-check');
+    checkboxes.forEach(cb => cb.checked = source.checked);
 }
 
 // Hide check-in form
@@ -435,6 +518,21 @@ async function submitCheckin() {
     const duration = parseInt(document.getElementById('duration').value);
     const selectedLat = document.getElementById('selectedLat').value;
     const selectedLng = document.getElementById('selectedLng').value;
+
+    // Visibility
+    const visibilityRoute = document.querySelector('input[name="visibility"]:checked');
+    const visibility = visibilityRoute ? visibilityRoute.value : 'everyone';
+    let shareWith = [];
+
+    if (visibility === 'specific') {
+        const checkboxes = document.querySelectorAll('.friend-check:checked');
+        checkboxes.forEach(cb => shareWith.push(cb.value));
+
+        if (shareWith.length === 0) {
+            alert('Please select at least one friend to share with, or choose "Everyone".');
+            return;
+        }
+    }
 
     if (!locationName) {
         alert('Please search for a location or use your current location');
@@ -458,7 +556,9 @@ async function submitCheckin() {
                 lng: parseFloat(selectedLng),
                 location_name: locationName,
                 message: message,
-                duration_minutes: duration
+                duration_minutes: duration,
+                visibility: visibility,
+                share_with: shareWith
             })
         });
 

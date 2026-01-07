@@ -11,12 +11,25 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import os
 import uuid
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Mail Configuration
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.googlemail.com')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+mail = Mail(app)
+
+# Serializer for generating reset tokens
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # Initialize Supabase client
 SUPABASE_URL = os.getenv('SUPABASE_URL')
@@ -166,6 +179,109 @@ def login():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/auth/reset-password-request', methods=['POST'])
+def reset_password_request():
+    """
+    Request a password reset email
+    Accepts: { "email": "ellen@example.com" }
+    """
+    try:
+        data = request.json
+        email = data.get('email')
+        
+        if not email:
+            return jsonify({'error': 'Email required'}), 400
+        
+        # Check if user exists
+        response = supabase.table('users').select('*').eq('email', email).execute()
+        
+        if not response.data or len(response.data) == 0:
+            # For security, don't reveal if email exists, just pretend it worked
+            return jsonify({'message': 'If your email is registered, you will receive a reset link.'}), 200
+        
+        # Generate token
+        token = serializer.dumps(email, salt='password-reset-salt')
+        
+        # Create reset link
+        # In production, use url_for with _external=True, but strictly properly configured
+        reset_url = request.url_root.rstrip('/') + f'/reset-password/{token}'
+        
+        # Send Email
+        msg = Message('Password Reset Request', 
+                      sender=app.config.get('MAIL_USERNAME') or 'noreply@hangouts.com',
+                      recipients=[email])
+        
+        msg.body = f"""To reset your password, visit the following link:
+{reset_url}
+
+If you did not make this request then simply ignore this email and no changes will be made.
+"""
+        try:
+            if app.config.get('MAIL_USERNAME'):
+                mail.send(msg)
+            else:
+                print("\n" + "="*50)
+                print(f"MOCK EMAIL TO {email}:")
+                print(msg.body)
+                print("="*50 + "\n")
+        except Exception as e:
+            print(f"Error sending email: {e}")
+            # Still return success to user
+        
+        return jsonify({'message': 'If your email is registered, you will receive a reset link.'}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/reset-password/<token>', methods=['GET'])
+def reset_password_page(token):
+    """Serve the password reset page"""
+    try:
+        serializer.loads(token, salt='password-reset-salt', max_age=3600)
+        return render_template('reset_password.html', token=token)
+    except SignatureExpired:
+        return "<h1>The reset link has expired.</h1>"
+    except BadTimeSignature:
+        return "<h1>Invalid reset link.</h1>"
+    except Exception as e:
+        print(f"Reset Page Error: {e}")
+        return f"<h1>Error loading page: {e}</h1>", 500
+
+
+@app.route('/api/auth/reset-password/<token>', methods=['POST'])
+def reset_password_perform(token):
+    """
+    Perform the password reset
+    Accepts: { "password": "newpassword123" }
+    """
+    try:
+        email = serializer.loads(token, salt='password-reset-salt', max_age=3600)
+        
+        data = request.json
+        new_password = data.get('password')
+        
+        if not new_password:
+            return jsonify({'error': 'Password required'}), 400
+            
+        # Hash new password
+        password_hash = generate_password_hash(new_password)
+        
+        # Update user
+        supabase.table('users').update({
+            'password_hash': password_hash
+        }).eq('email', email).execute()
+        
+        return jsonify({'success': True, 'message': 'Password has been reset successfully.'}), 200
+        
+    except SignatureExpired:
+        return jsonify({'error': 'Token expired'}), 400
+    except BadTimeSignature:
+        return jsonify({'error': 'Invalid token'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/logout', methods=['POST'])
 @login_required
 def api_logout():
@@ -266,9 +382,21 @@ def checkin():
         message = data.get('message', '')
         duration_minutes = data.get('duration_minutes', 60)
         
+        # New: Friend selection
+        # visibility: 'everyone' or 'specific'
+        visibility = data.get('visibility', 'everyone')
+        share_with = data.get('share_with', []) # List of UUIDs
+        
         # Validate inputs
         if not all([user_id, lat, lng]):
             return jsonify({'error': 'Missing required fields'}), 400
+            
+        # Validate visibility
+        if visibility not in ['everyone', 'specific']:
+            visibility = 'everyone'
+            
+        # If specific but no friends selected, default to everyone or error? 
+        # Let's assume empty share_with means "Only me" effectively, or just fail safely.
         
         # Calculate expiration time
         expires_at = datetime.utcnow() + timedelta(minutes=duration_minutes)
@@ -283,7 +411,9 @@ def checkin():
             'location_name': location_name,
             'geom': geom,
             'message': message,
-            'expires_at': expires_at.isoformat() + 'Z'  # Add Z to indicate UTC
+            'expires_at': expires_at.isoformat() + 'Z',  # Add Z to indicate UTC
+            'visibility': visibility,
+            'share_with': share_with if visibility == 'specific' else None
         }).execute()
         
         if response.data:
@@ -322,6 +452,10 @@ def feed():
         friend_ids.append(user_id)
         
         # Get active check-ins from friends
+         # FILTERING LOGIC:
+        # We fetch all active check-ins from friends, then filter in Python for visibility.
+        # This is not most efficient for scale, but flexible for complex rules.
+
         # Note: Supabase will return geom as GeoJSON
         now = datetime.utcnow().isoformat() + 'Z'  # Add Z to indicate UTC
         
@@ -367,6 +501,20 @@ def feed():
             created_at = checkin['created_at']
             if not created_at.endswith('Z'):
                 created_at = created_at + 'Z'
+                
+            # --- VISIBILITY CHECK ---
+            checkin_visibility = checkin.get('visibility', 'everyone')
+            
+            # 1. My own check-in: Always show
+            if checkin['user_id'] == user_id:
+                pass 
+            # 2. Friend's check-in: Check visibility
+            else:
+                if checkin_visibility == 'specific':
+                    # Check if I am in the share_with list
+                    shared_list = checkin.get('share_with') or []
+                    if user_id not in shared_list:
+                        continue # Skip this check-in
             
             formatted_checkins.append({
                 'id': checkin['id'],
@@ -378,7 +526,8 @@ def feed():
                 'lng': lng,
                 'expires_at': expires_at,
                 'created_at': created_at,
-                'attendees': attendees
+                'attendees': attendees,
+                'visibility': checkin_visibility
             })
         
         return jsonify({'checkins': formatted_checkins}), 200

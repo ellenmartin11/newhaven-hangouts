@@ -48,7 +48,19 @@
                 <div id="loginForm" class="auth-form">
                     <input type="email" id="loginEmail" placeholder="Email" />
                     <input type="password" id="loginPassword" placeholder="Password" />
-                    <button class="btn btn-primary" onclick="performLogin()">Login</button>
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="performLogin()">Login</button>
+                        <a href="#" class="forgot-password" onclick="showForgotPassword()">Forgot Password?</a>
+                    </div>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="forgotPasswordForm" class="auth-form" style="display: none;">
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">Enter your email to receive a reset
+                        link.</p>
+                    <input type="email" id="forgotEmail" placeholder="Email" />
+                    <button class="btn btn-primary" onclick="requestPasswordReset()">Send Link</button>
+                    <button class="btn btn-text" onclick="switchAuthMode('login')">Back to Login</button>
                 </div>
 
                 <!-- Signup Form -->
@@ -129,7 +141,40 @@
                         <option value="90">1.5 hours</option>
                         <option value="120">2 hours</option>
                         <option value="180">3 hours</option>
+                        <option value="180">3 hours</option>
                     </select>
+
+                    <!-- Friend Selection -->
+                    <div class="friend-selection-section">
+                        <label>Share with:</label>
+                        <div class="visibility-options">
+                            <label class="radio-label">
+                                <input type="radio" name="visibility" value="everyone" checked
+                                    onchange="toggleFriendList(false)">
+                                Everyone (All Friends)
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="visibility" value="specific"
+                                    onchange="toggleFriendList(true)">
+                                Specific Friends
+                            </label>
+                        </div>
+
+                        <div id="friendSelectionList" class="friend-list-container" style="display: none;">
+                            <div class="select-all-container">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="selectAllFriends"
+                                        onchange="toggleSelectAllFriends(this)">
+                                    Select All
+                                </label>
+                            </div>
+                            <div id="friendsCheckboxes">
+                                <!-- Populated via JS -->
+                                <p class="loading-text">Loading friends...</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <button class="btn btn-primary" onclick="submitCheckin()">Post Check-In</button>
                 </div>
             </div>
