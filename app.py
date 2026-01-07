@@ -20,7 +20,7 @@ load_dotenv()
 
 app = Flask(__name__)
 # Enable CORS for mobile app access (Origin must be specific if supports_credentials=True)
-CORS(app, resources={r"/*": {"origins": ["http://localhost", "capacitor://localhost", "http://10.0.2.2"]}}, supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": ["http://localhost", "https://localhost", "capacitor://localhost", "http://10.0.2.2"]}}, supports_credentials=True)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Session Configuration for Mobile (Cross-Site)
