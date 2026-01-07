@@ -13,12 +13,19 @@ import os
 import uuid
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from flask_cors import CORS
 
 # Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
+# Enable CORS for mobile app access (Origin must be specific if supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": ["http://localhost", "capacitor://localhost", "http://10.0.2.2"]}}, supports_credentials=True)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
+
+# Session Configuration for Mobile (Cross-Site)
+app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = True
 
 # Mail Configuration
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.googlemail.com')

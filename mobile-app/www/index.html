@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>New Haven HangOut</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="static/css/style.css">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="app-title">New Haven Hangouts!</h1>
+                <div class="header-right">
+                    <a href="about.html" class="btn btn-friends">ℹ️ About</a>
+                    <a href="friends.html" class="btn btn-friends">👥 Friends</a>
+                    <a href="stats.html" class="btn btn-friends">📊 Stats</a>
+                    <div class="user-info" id="userInfo">
+                        <span id="usernameDisplay">Guest</span>
+                        <button class="btn-logout" onclick="logout()" title="Logout">🚪</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Login Modal -->
+        <div class="modal" id="loginModal">
+            <div class="modal-content">
+                <h2 id="modalTitle">Welcome!</h2>
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="loginTab" onclick="switchAuthMode('login')">Login</button>
+                    <button class="auth-tab" id="signupTab" onclick="switchAuthMode('signup')">Sign Up</button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="loginForm" class="auth-form">
+                    <input type="email" id="loginEmail" placeholder="Email" />
+                    <input type="password" id="loginPassword" placeholder="Password" />
+                    <div class="form-actions">
+                        <button class="btn btn-primary" onclick="performLogin()">Login</button>
+                        <a href="#" class="forgot-password" onclick="showForgotPassword()">Forgot Password?</a>
+                    </div>
+                </div>
+
+                <!-- Forgot Password Form -->
+                <div id="forgotPasswordForm" class="auth-form" style="display: none;">
+                    <p style="margin-bottom: 1rem; color: var(--text-secondary);">Enter your email to receive a reset
+                        link.</p>
+                    <input type="email" id="forgotEmail" placeholder="Email" />
+                    <button class="btn btn-primary" onclick="requestPasswordReset()">Send Link</button>
+                    <button class="btn btn-text" onclick="switchAuthMode('login')">Back to Login</button>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="signupForm" class="auth-form" style="display: none;">
+                    <input type="text" id="signupUsername" placeholder="Username" />
+                    <input type="email" id="signupEmail" placeholder="Email" />
+                    <input type="password" id="signupPassword" placeholder="Password" />
+                    <input type="password" id="signupConfirmPassword" placeholder="Confirm Password" />
+                    <button class="btn btn-primary" onclick="performSignup()">Sign Up</button>
+                </div>
+
+                <div id="authMessage" class="auth-message"></div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- View Toggle -->
+            <div class="view-toggle">
+                <button class="toggle-btn active" id="mapViewBtn" onclick="switchView('map')">
+                    🗺️ Map
+                </button>
+                <button class="toggle-btn" id="listViewBtn" onclick="switchView('list')">
+                    📋 List
+                </button>
+            </div>
+
+            <!-- Map Container -->
+            <div id="mapView" class="view-container">
+                <div id="map"></div>
+            </div>
+
+            <!-- List Container -->
+            <div id="listView" class="view-container" style="display: none;">
+                <div class="list-content">
+                    <h2>Friends' Check-ins</h2>
+                    <div id="checkinsList"></div>
+                </div>
+            </div>
+
+            <!-- Controls Overlay -->
+            <div class="controls-overlay">
+                <button class="btn btn-checkin" id="checkinBtn" onclick="showCheckinForm()">
+                    📍 Check In
+                </button>
+                <button class="btn btn-refresh" onclick="loadFeed()">
+                    🔄 Refresh
+                </button>
+            </div>
+
+            <!-- Check-in Form -->
+            <div class="checkin-form" id="checkinForm" style="display: none;">
+                <div class="form-header">
+                    <h3>Create Check-In</h3>
+                    <button class="btn-close" onclick="hideCheckinForm()">✕</button>
+                </div>
+                <div class="form-body">
+                    <label for="locationSearch">Search for a location</label>
+                    <div class="search-container">
+                        <input type="text" id="locationSearch" placeholder="Search for a place (e.g., Koffee)"
+                            oninput="searchLocation(this.value)" autocomplete="off" />
+                        <div id="searchResults" class="search-results"></div>
+                    </div>
+                    <div class="or-divider">
+                        <span>OR</span>
+                    </div>
+                    <button class="btn btn-secondary" onclick="useCurrentLocation()">
+                        📍 Use My Current Location
+                    </button>
+                    <input type="text" id="locationName" placeholder="Location name" readonly />
+                    <input type="hidden" id="selectedLat" />
+                    <input type="hidden" id="selectedLng" />
+                    <textarea id="message" placeholder="What are you up to? (optional)" rows="3"></textarea>
+                    <label for="duration">How long will you be here?</label>
+                    <select id="duration">
+                        <option value="30">30 minutes</option>
+                        <option value="60" selected>1 hour</option>
+                        <option value="90">1.5 hours</option>
+                        <option value="120">2 hours</option>
+                        <option value="180">3 hours</option>
+                        <option value="180">3 hours</option>
+                    </select>
+
+                    <!-- Friend Selection -->
+                    <div class="friend-selection-section">
+                        <label>Share with:</label>
+                        <div class="visibility-options">
+                            <label class="radio-label">
+                                <input type="radio" name="visibility" value="everyone" checked
+                                    onchange="toggleFriendList(false)">
+                                Everyone (All Friends)
+                            </label>
+                            <label class="radio-label">
+                                <input type="radio" name="visibility" value="specific"
+                                    onchange="toggleFriendList(true)">
+                                Specific Friends
+                            </label>
+                        </div>
+
+                        <div id="friendSelectionList" class="friend-list-container" style="display: none;">
+                            <div class="select-all-container">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="selectAllFriends"
+                                        onchange="toggleSelectAllFriends(this)">
+                                    Select All
+                                </label>
+                            </div>
+                            <div id="friendsCheckboxes">
+                                <!-- Populated via JS -->
+                                <p class="loading-text">Loading friends...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-primary" onclick="submitCheckin()">Post Check-In</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Custom JS -->
+    <script src="static/js/app.js"></script>
+</body>
+
+</html>
