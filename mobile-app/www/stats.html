@@ -278,10 +278,11 @@
     <!-- Stats Logic -->
     <script src="static/js/stats.js"></script>
     <script>
-        const API_BASE_URL = 'http://127.0.0.1:5000'; // Development Default
+        // API_BASE_URL is defined in stats.js
+
 
         // Simple auth check to get username for header
-        fetch(`${API_BASE_URL}/api/current_user`)
+        fetch(`${API_BASE_URL}/api/current_user`, { credentials: 'include' })
             .then(res => {
                 if (!res.ok) window.location.href = 'index.html';
                 return res.json();

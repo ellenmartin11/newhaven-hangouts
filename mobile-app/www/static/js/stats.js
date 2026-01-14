@@ -1,5 +1,7 @@
 // For Production (Vercel)
 const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
+// For Local Dev / Simulator
+// const API_BASE_URL = 'http://192.168.68.109:8000';
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchStats();

@@ -5,6 +5,8 @@
 
 // For Production (Vercel)
 const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
+// For Local Dev / Simulator
+// const API_BASE_URL = 'http://192.168.68.109:8000';
 
 // Check authentication on page load
 window.addEventListener('DOMContentLoaded', async () => {
@@ -13,9 +15,12 @@ window.addEventListener('DOMContentLoaded', async () => {
     await loadFriends();
 });
 
+// Helper to get base URL
+const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '';
+
 async function checkAuth() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/current_user`, { credentials: 'include' });
+        const response = await fetch(`${baseUrl}/api/current_user`, { credentials: 'include' });
         if (!response.ok) {
             // Not authenticated, redirect to home
             window.location.href = 'index.html';
@@ -48,7 +53,7 @@ async function addFriend() {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/friends/add`, {
+        const response = await fetch(`${baseUrl}/api/friends/add`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -75,7 +80,7 @@ async function addFriend() {
 
 async function loadFriendRequests() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/friends/requests`, { credentials: 'include' });
+        const response = await fetch(`${baseUrl}/api/friends/requests`, { credentials: 'include' });
 
         if (!response.ok) {
             console.error('Failed to load friend requests');
@@ -118,7 +123,7 @@ async function loadFriendRequests() {
 
 async function acceptRequest(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/friends/accept`, {
+        const response = await fetch(`${baseUrl}/api/friends/accept`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -143,7 +148,7 @@ async function acceptRequest(userId) {
 
 async function rejectRequest(userId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/friends/reject`, {
+        const response = await fetch(`${baseUrl}/api/friends/reject`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -167,7 +172,7 @@ async function rejectRequest(userId) {
 
 async function loadFriends() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/friends`, { credentials: 'include' });
+        const response = await fetch(`${baseUrl}/api/friends`, { credentials: 'include' });
 
         if (!response.ok) {
             console.error('Failed to load friends');
@@ -204,7 +209,7 @@ async function loadFriends() {
 
 async function logout() {
     try {
-        await fetch(`${API_BASE_URL}/api/logout`, { method: 'POST', credentials: 'include' });
+        await fetch(`${baseUrl}/api/logout`, { method: 'POST', credentials: 'include' });
         window.location.href = 'index.html';
     } catch (error) {
         console.error('Error logging out:', error);

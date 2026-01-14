@@ -18,14 +18,25 @@ from flask_cors import CORS
 # Load environment variables
 load_dotenv()
 
+# FIX: Force usage of certifi certificates to avoid [SSL: CERTIFICATE_VERIFY_FAILED]
+import certifi
+os.environ['SSL_CERT_FILE'] = certifi.where()
+
 app = Flask(__name__)
 # Enable CORS for mobile app access (Origin must be specific if supports_credentials=True)
-CORS(app, resources={r"/*": {"origins": ["http://localhost", "https://localhost", "capacitor://localhost", "http://10.0.2.2"]}}, supports_credentials=True)
+# Enable CORS for mobile app access (Origin must be specific if supports_credentials=True)
+CORS(app, resources={r"/*": {"origins": ["http://localhost:5000", "http://127.0.0.1:5000", "http://localhost:8000", "http://127.0.0.1:8000", "http://192.168.68.109:8000", "ionic://localhost", "capacitor://localhost", "http://localhost", "http://127.0.0.1"]}}, supports_credentials=True)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Session Configuration for Mobile (Cross-Site)
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'
-app.config['SESSION_COOKIE_SECURE'] = True
+# NOTE: For local dev (HTTP), we must disable Secure and use Lax.
+# On Vercel (HTTPS), we should use Secure and None.
+if os.getenv('VERCEL'):
+    app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+    app.config['SESSION_COOKIE_SECURE'] = True
+else:
+    app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+    app.config['SESSION_COOKIE_SECURE'] = False
 
 # Mail Configuration
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.googlemail.com')

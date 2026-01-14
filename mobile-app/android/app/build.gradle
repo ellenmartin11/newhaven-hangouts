@@ -3,6 +3,14 @@ apply plugin: 'com.android.application'
 android {
     namespace = "com.newhavenhangouts.app"
     compileSdk = rootProject.ext.compileSdkVersion
+    signingConfigs {
+        release {
+            storeFile file("my-release-key.keystore")
+            storePassword 'EJFranzFerdinand2022!!'
+            keyAlias 'alias_name'
+            keyPassword 'EJFranzFerdinand2022!!'
+        }
+    }
     defaultConfig {
         applicationId "com.newhavenhangouts.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,6 +28,7 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {

@@ -7,8 +7,11 @@ let currentLocation = null;
 let markers = [];
 
 // API Base URL - Change this to your deployed server URL when publishing
+// API Base URL - Change this to your deployed server URL when publishing
 // For Production (Vercel)
 const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
+// For Local Dev / Simulator
+// const API_BASE_URL = 'http://192.168.68.109:8000';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
@@ -112,7 +115,16 @@ async function performLogin() {
             body: JSON.stringify({ email, password })
         });
 
-        const data = await response.json();
+        console.log('Login Response Status:', response.status);
+        const text = await response.text();
+        console.log('Login Response Text:', text);
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch (e) {
+            console.error('Failed to parse JSON:', e);
+            throw new Error(`Server returned non-JSON response: ${text.substring(0, 100)}`);
+        }
 
         if (response.ok) {
             userId = data.user_id;
@@ -704,6 +716,7 @@ async function imComing(checkinId) {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 user_id: userId,
                 checkin_id: checkinId
@@ -737,6 +750,7 @@ async function deleteCheckin(checkinId) {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 user_id: userId
             })

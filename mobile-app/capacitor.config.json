@@ -3,6 +3,14 @@
   "appName": "New Haven Hangouts",
   "webDir": "www",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "iosScheme": "ionic",
+    "cleartext": true
+  },
+  "loggingBehavior": "debug",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
   }
 }
