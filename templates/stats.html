@@ -12,6 +12,7 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&display=swap"
         rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
     <style>
         .stats-container {
@@ -215,18 +216,38 @@
 <body>
     <div class="stats-container">
         <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="header-left">
-                    <a href="/" class="back-link" style="text-decoration: none; color: var(--text-primary);">← Back to
-                        Map</a>
-                </div>
-                <h1 class="app-title">Your Stats</h1>
-                <div class="user-info" id="userInfo">
+        <!-- FAB Navigation -->
+        <div class="fab-container">
+            <div class="fab-menu" id="fabMenu">
+                <div class="menu-user">
+                    <div class="user-avatar">👤</div>
                     <span id="usernameDisplay">Guest</span>
                 </div>
+                <div class="menu-items">
+                    <button onclick="toggleTheme()" class="menu-item" id="themeToggleBtn">
+                        🏔️ Glacier Mode
+                    </button>
+                    <a href="{{ url_for('index') }}" class="menu-item">
+                        🏠 Home
+                    </a>
+                    <a href="{{ url_for('friends_page') }}" class="menu-item">
+                        👥 Friends
+                    </a>
+                    <a href="{{ url_for('stats_page') }}" class="menu-item">
+                        📊 Stats
+                    </a>
+                    <a href="{{ url_for('about_page') }}" class="menu-item">
+                        ℹ️ About
+                    </a>
+                    <button onclick="logout()" class="menu-item item-logout">
+                        🚪 Log Out
+                    </button>
+                </div>
             </div>
-        </header>
+            <button class="fab-main" onclick="toggleFabMenu()">
+                <span class="fab-icon">☰</span>
+            </button>
+        </div>
 
         <div class="stats-content">
             <div class="stats-header">
@@ -275,6 +296,7 @@
     </div>
 
     <!-- Stats Logic -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script src="{{ url_for('static', filename='js/stats.js') }}"></script>
     <script>
         // Simple auth check to get username for header

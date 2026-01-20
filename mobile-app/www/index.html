@@ -20,20 +20,35 @@
 <body>
     <div class="app-container">
         <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="app-title">New Haven Hangouts!</h1>
-                <div class="header-right">
-                    <a href="about.html" class="btn btn-friends">ℹ️ About</a>
-                    <a href="friends.html" class="btn btn-friends">👥 Friends</a>
-                    <a href="stats.html" class="btn btn-friends">📊 Stats</a>
-                    <div class="user-info" id="userInfo">
-                        <span id="usernameDisplay">Guest</span>
-                        <button class="btn-logout" onclick="logout()" title="Logout">🚪</button>
-                    </div>
+        <!-- FAB Navigation -->
+        <div class="fab-container">
+            <div class="fab-menu" id="fabMenu">
+                <div class="menu-user">
+                    <div class="user-avatar">👤</div>
+                    <span id="usernameDisplay">Guest</span>
+                </div>
+                <div class="menu-items">
+                    <button onclick="toggleTheme()" class="menu-item" id="themeToggleBtn">
+                        🏔️ Glacier Mode
+                    </button>
+                    <a href="friends.html" class="menu-item">
+                        👥 Friends
+                    </a>
+                    <a href="stats.html" class="menu-item">
+                        📊 Stats
+                    </a>
+                    <a href="about.html" class="menu-item">
+                        ℹ️ About
+                    </a>
+                    <button onclick="logout()" class="menu-item item-logout">
+                        🚪 Log Out
+                    </button>
                 </div>
             </div>
-        </header>
+            <button class="fab-main" onclick="toggleFabMenu()">
+                <span class="fab-icon">☰</span>
+            </button>
+        </div>
 
         <!-- Login Modal -->
         <div class="modal" id="loginModal">

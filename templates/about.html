@@ -11,6 +11,7 @@
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 
     <style>
         .about-container {
@@ -203,14 +204,38 @@
 <body>
     <div class="about-container">
         <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="app-title">New Haven Hangouts!</h1>
-                <div class="header-right">
-                    <a href="/" class="btn btn-friends">🏠 Home</a>
+        <!-- FAB Navigation -->
+        <div class="fab-container">
+            <div class="fab-menu" id="fabMenu">
+                <div class="menu-user">
+                    <div class="user-avatar">👤</div>
+                    <span id="usernameDisplay">Guest</span>
+                </div>
+                <div class="menu-items">
+                    <button onclick="toggleTheme()" class="menu-item" id="themeToggleBtn">
+                        🏔️ Glacier Mode
+                    </button>
+                    <a href="{{ url_for('index') }}" class="menu-item">
+                        🏠 Home
+                    </a>
+                    <a href="{{ url_for('friends_page') }}" class="menu-item">
+                        👥 Friends
+                    </a>
+                    <a href="{{ url_for('stats_page') }}" class="menu-item">
+                        📊 Stats
+                    </a>
+                    <a href="{{ url_for('about_page') }}" class="menu-item">
+                        ℹ️ About
+                    </a>
+                    <button onclick="logout()" class="menu-item item-logout">
+                        🚪 Log Out
+                    </button>
                 </div>
             </div>
-        </header>
+            <button class="fab-main" onclick="toggleFabMenu()">
+                <span class="fab-icon">☰</span>
+            </button>
+        </div>
 
         <!-- About Content -->
         <div class="about-content">
@@ -256,7 +281,7 @@
                 <p style="font-style: italic; color: var(--text-secondary); margin-bottom: 0;">
                     For now, it's just a <span class="highlight">super simple browser app</span> — but we're working
                     hard
-                    to make it even better!
+                    to make it even better! It's in development for ios and android.
                 </p>
 
                 <div class="cta-section">
@@ -266,6 +291,7 @@
             </div>
         </div>
     </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 
 </html>

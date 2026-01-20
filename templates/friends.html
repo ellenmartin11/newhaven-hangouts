@@ -11,23 +11,44 @@
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
 </head>
 
 <body>
     <div class="app-container">
         <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <div class="header-left">
-                    <a href="/" class="back-link">← Back to Map</a>
-                </div>
-                <h1 class="app-title">Friends</h1>
-                <div class="user-info" id="userInfo">
+        <!-- FAB Navigation -->
+        <div class="fab-container">
+            <div class="fab-menu" id="fabMenu">
+                <div class="menu-user">
+                    <div class="user-avatar">👤</div>
                     <span id="usernameDisplay">Guest</span>
-                    <button class="btn-logout" onclick="logout()" title="Logout">🚪</button>
+                </div>
+                <div class="menu-items">
+                    <button onclick="toggleTheme()" class="menu-item" id="themeToggleBtn">
+                        🏔️ Glacier Mode
+                    </button>
+                    <a href="{{ url_for('index') }}" class="menu-item">
+                        🏠 Home
+                    </a>
+                    <a href="{{ url_for('friends_page') }}" class="menu-item">
+                        👥 Friends
+                    </a>
+                    <a href="{{ url_for('stats_page') }}" class="menu-item">
+                        📊 Stats
+                    </a>
+                    <a href="{{ url_for('about_page') }}" class="menu-item">
+                        ℹ️ About
+                    </a>
+                    <button onclick="logout()" class="menu-item item-logout">
+                        🚪 Log Out
+                    </button>
                 </div>
             </div>
-        </header>
+            <button class="fab-main" onclick="toggleFabMenu()">
+                <span class="fab-icon">☰</span>
+            </button>
+        </div>
 
         <!-- Main Content -->
         <div class="friends-page">
@@ -61,6 +82,7 @@
     </div>
 
     <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
     <script src="{{ url_for('static', filename='js/friends.js') }}"></script>
 </body>
 

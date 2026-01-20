@@ -8,6 +8,9 @@ let markers = [];
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
+    // Initialize Theme
+    initTheme();
+
     // Check if user is logged in (session-based)
     try {
         const response = await fetch('/api/current_user');
@@ -15,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             const data = await response.json();
             userId = data.user_id;
             username = data.username;
-            document.getElementById('usernameDisplay').textContent = username;
+            updateUserInterface(username);
             document.getElementById('loginModal').style.display = 'none';
             initMap();
         } else {
@@ -23,6 +26,55 @@ document.addEventListener('DOMContentLoaded', async function () {
         }
     } catch (error) {
         document.getElementById('loginModal').style.display = 'flex';
+    }
+});
+
+// --- Theme Logic ---
+function initTheme() {
+    const savedTheme = localStorage.getItem('theme') || 'glacier';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    updateThemeIcon(savedTheme);
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'glacier';
+    const next = current === 'glacier' ? 'default' : 'glacier';
+
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+    const btn = document.getElementById('themeToggleBtn');
+    if (btn) {
+        btn.textContent = theme === 'default' ? '🏔️ Glacier Mode' : '☀️ Default Mode';
+    }
+}
+
+// Helper to update username in multiple places if needed
+function updateUserInterface(name) {
+    const display = document.getElementById('usernameDisplay');
+    if (display) display.textContent = name;
+}
+
+// FAB Menu Logic
+function toggleFabMenu() {
+    const fabMenu = document.getElementById('fabMenu');
+    fabMenu.classList.toggle('active');
+
+    // Animate FAB icon if desired (e.g. rotate)
+    const fabBtn = document.querySelector('.fab-main');
+    fabBtn.classList.toggle('active');
+}
+
+// Close FAB menu when clicking outside
+document.addEventListener('click', function (event) {
+    const fabContainer = document.querySelector('.fab-container');
+    const fabMenu = document.getElementById('fabMenu');
+
+    if (fabContainer && !fabContainer.contains(event.target) && fabMenu.classList.contains('active')) {
+        toggleFabMenu();
     }
 });
 
@@ -114,7 +166,7 @@ async function performLogin() {
             username = data.username;
 
             // Update UI
-            document.getElementById('usernameDisplay').textContent = username;
+            updateUserInterface(username);
             document.getElementById('loginModal').style.display = 'none';
 
             // Initialize map
@@ -172,7 +224,7 @@ async function performSignup() {
             username = data.username;
 
             // Update UI
-            document.getElementById('usernameDisplay').textContent = username;
+            updateUserInterface(username);
             document.getElementById('loginModal').style.display = 'none';
 
             // Initialize map
@@ -206,6 +258,9 @@ async function logout() {
 // Initialize Leaflet map
 function initMap() {
     // Create map centered on New Haven, CT
+    const mapElement = document.getElementById('map');
+    if (!mapElement) return; // Exit if map element doesn't exist (e.g. on other pages)
+
     map = L.map('map').setView([41.308, -72.927], 13);
 
     // Add OpenStreetMap tile layer
