@@ -43,6 +43,10 @@
                     <button onclick="logout()" class="menu-item item-logout">
                         🚪 Log Out
                     </button>
+                    <button onclick="deleteAccount()" class="menu-item item-delete-account"
+                        style="color: #ff4d4d; border-top: 1px solid rgba(255, 77, 77, 0.2); margin-top: 0.5rem; padding-top: 1rem;">
+                        🗑️ Delete Account
+                    </button>
                 </div>
             </div>
             <button class="fab-main" onclick="toggleFabMenu()">
@@ -65,12 +69,21 @@
                     <div class="password-input-container">
                         <input type="password" id="loginPassword" placeholder="Password" />
                         <button type="button" class="password-toggle"
-                            onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+                            onclick="togglePasswordVisibility('loginPassword', this)">
+                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24">
+                                </path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
+                            </svg>
+                        </button>
                     </div>
+                    <label class="remember-me">
+                        <span>Remember Me</span>
+                        <input type="checkbox" id="rememberMe">
+                    </label>
                     <div class="form-actions">
-                        <label class="remember-me">
-                            <input type="checkbox" id="rememberMe"> Remember Me
-                        </label>
                         <button class="btn btn-primary" onclick="performLogin()">Login</button>
                         <a href="#" class="forgot-password" onclick="showForgotPassword()">Forgot Password?</a>
                     </div>
@@ -92,17 +105,63 @@
                     <div class="password-input-container">
                         <input type="password" id="signupPassword" placeholder="Password" />
                         <button type="button" class="password-toggle"
-                            onclick="togglePasswordVisibility('signupPassword', this)">👁️</button>
+                            onclick="togglePasswordVisibility('signupPassword', this)">
+                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
                     </div>
                     <div class="password-input-container">
                         <input type="password" id="signupConfirmPassword" placeholder="Confirm Password" />
                         <button type="button" class="password-toggle"
-                            onclick="togglePasswordVisibility('signupConfirmPassword', this)">👁️</button>
+                            onclick="togglePasswordVisibility('signupConfirmPassword', this)">
+                            <svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </button>
                     </div>
                     <button class="btn btn-primary" onclick="performSignup()">Sign Up</button>
                 </div>
 
                 <div id="authMessage" class="auth-message"></div>
+            </div>
+        </div>
+
+        <!-- Location Disclosure Modal -->
+        <div class="modal" id="locationDisclosureModal">
+            <div class="modal-content disclosure-content">
+                <h2>Location Access</h2>
+                <div class="disclosure-body">
+                    <p>To help you connect with friends, <strong>HangApp</strong> requires access to your precise
+                        location.</p>
+                    <div class="disclosure-item">
+                        <span class="disclosure-icon">📍</span>
+                        <div class="disclosure-text">
+                            <strong>Check-ins:</strong> Your location is only accessed when you check in to select your
+                            venue.
+                        </div>
+                    </div>
+                    <div class="disclosure-item">
+                        <span class="disclosure-icon">👥</span>
+                        <div class="disclosure-text">
+                            <strong>Sharing:</strong> Shared <strong>only</strong> with confirmed friends.
+                        </div>
+                    </div>
+                    <div class="disclosure-item">
+                        <span class="disclosure-icon">🔒</span>
+                        <div class="disclosure-text">
+                            <strong>Privacy:</strong> No background tracking. Only accessed while using the app.
+                        </div>
+                    </div>
+                </div>
+                <div class="disclosure-actions">
+                    <button class="btn btn-primary" onclick="acceptLocationDisclosure()">I Understand</button>
+                    <button class="btn btn-text" onclick="closeLocationDisclosure()">Not Now</button>
+                </div>
             </div>
         </div>
 
@@ -151,13 +210,14 @@
                     <label for="locationSearch">Search for a location</label>
                     <div class="search-container">
                         <input type="text" id="locationSearch" placeholder="Search for a place (e.g., Koffee)"
-                            oninput="searchLocation(this.value)" autocomplete="off" />
+                            oninput="searchLocation(this.value)" onkeyup="searchLocation(this.value)"
+                            autocomplete="off" />
                         <div id="searchResults" class="search-results"></div>
                     </div>
                     <div class="or-divider">
                         <span>OR</span>
                     </div>
-                    <button class="btn btn-secondary" onclick="useCurrentLocation()">
+                    <button class="btn btn-secondary" id="useCurrentLocationBtn" onclick="useCurrentLocation()">
                         📍 Use My Current Location
                     </button>
                     <input type="text" id="locationName" placeholder="Location name" readonly />

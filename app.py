@@ -309,6 +309,27 @@ def api_logout():
     return jsonify({'success': True}), 200
 
 
+@app.route('/api/user/delete', methods=['DELETE'])
+@login_required
+def delete_account():
+    """Permanently delete the current user's account and all their data"""
+    try:
+        user_id = current_user.id
+        
+        # Logout first to clear session
+        logout_user()
+        
+        # Delete user from Supabase (friendships, checkins, attendees will be deleted via ON DELETE CASCADE)
+        supabase.table('users').delete().eq('id', user_id).execute()
+        
+        return jsonify({'success': True, 'message': 'Account deleted successfully'}), 200
+        
+    except Exception as e:
+        print(f"Error deleting account: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+
 @app.route('/api/current_user', methods=['GET'])
 def get_current_user():
     """Get current logged-in user"""

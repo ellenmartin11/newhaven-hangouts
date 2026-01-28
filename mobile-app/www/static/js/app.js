@@ -157,10 +157,10 @@ function togglePasswordVisibility(inputId, toggleBtn) {
 
     if (input.type === 'password') {
         input.type = 'text';
-        toggleBtn.textContent = '🙈'; // Eye closed
+        toggleBtn.innerHTML = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>'; // eye (now visible)
     } else {
         input.type = 'password';
-        toggleBtn.textContent = '👁️'; // Eye open
+        toggleBtn.innerHTML = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>'; // eye-off (now concealed)
     }
 }
 
@@ -345,6 +345,38 @@ async function logout() {
     window.location.reload();
 }
 
+// Delete Account Function
+async function deleteAccount() {
+    const confirmed = confirm("WARNING: This will permanently delete your account and all your check-in history. This action cannot be undone.\n\nAre you absolutely sure?");
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/user/delete`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.ok) {
+            alert("Your account has been deleted. Goodbye! 👋");
+
+            // Clear credentials
+            localStorage.removeItem('rememberedEmail');
+            localStorage.removeItem('rememberedPassword');
+
+            // Return to login
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert("Deletion failed: " + (data.error || "Unknown error"));
+        }
+    } catch (error) {
+        console.error('Delete account error:', error);
+        alert("Failed to delete account. Please try again.");
+    }
+}
+
+
 
 // Initialize Leaflet map
 function initMap() {
@@ -474,10 +506,16 @@ function updateListView(checkins) {
 
 // Switch between map and list views
 function switchView(view) {
+    console.log('Switching view to:', view);
     const mapView = document.getElementById('mapView');
     const listView = document.getElementById('listView');
     const mapBtn = document.getElementById('mapViewBtn');
     const listBtn = document.getElementById('listViewBtn');
+
+    if (!mapView || !listView || !mapBtn || !listBtn) {
+        console.error('View elements missing:', { mapView, listView, mapBtn, listBtn });
+        return;
+    }
 
     if (view === 'map') {
         mapView.style.display = 'block';
@@ -487,13 +525,20 @@ function switchView(view) {
 
         // Refresh map size
         if (map) {
-            setTimeout(() => map.invalidateSize(), 100);
+            console.log('Refreshing map size');
+            setTimeout(() => map.invalidateSize(), 150);
         }
     } else {
+        console.log('Showing list view');
         mapView.style.display = 'none';
         listView.style.display = 'block';
         mapBtn.classList.remove('active');
         listBtn.classList.add('active');
+
+        // Ensure feed is loaded when switching to list
+        if (userId) {
+            loadFeed();
+        }
     }
 }
 
@@ -728,42 +773,58 @@ async function searchLocation(query) {
 
     const searchResults = document.getElementById('searchResults');
 
-    if (!query || query.length < 3) {
+    if (!query || query.length < 2) {
         searchResults.innerHTML = '';
         searchResults.style.display = 'none';
         return;
     }
 
+    // Show loading state
+    searchResults.innerHTML = '<div class="searching">🔍 Searching...</div>';
+    searchResults.style.display = 'block';
+
     searchTimeout = setTimeout(async () => {
         try {
-            // Search around New Haven, CT
+            console.log('Searching OSM for:', query);
+            // Search with New Haven bias but NOT strict bounds
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/search?` +
                 `q=${encodeURIComponent(query)}&` +
                 `format=json&` +
                 `limit=5&` +
-                `viewbox=-72.98,41.36,-72.87,41.25&` + // New Haven bounding box
-                `bounded=1`
+                `viewbox=-73.1,41.4,-72.8,41.2&` + // Wider bias area
+                `bounded=0&` + // Bias, don't force
+                `addressdetails=1&` +
+                `accept-language=en`
             );
 
-            const results = await response.json();
-
-            if (results.length > 0) {
-                searchResults.innerHTML = results.map(result => `
-                    <div class="search-result-item" onclick="selectLocation('${result.display_name}', ${result.lat}, ${result.lon})">
-                        <div class="result-name">${result.display_name.split(',')[0]}</div>
-                        <div class="result-address">${result.display_name}</div>
-                    </div>
-                `).join('');
-                searchResults.style.display = 'block';
-            } else {
-                searchResults.innerHTML = '<div class="no-results">No results found</div>';
-                searchResults.style.display = 'block';
+            if (!response.ok) {
+                throw new Error(`OSM error: ${response.status}`);
             }
+
+            const results = await response.json();
+            console.log('OSM Results:', results);
+
+            if (results && results.length > 0) {
+                searchResults.innerHTML = results.map(result => {
+                    const escapedName = result.display_name.replace(/'/g, "\\'");
+                    const mainName = result.display_name.split(',')[0];
+                    return `
+                        <div class="search-result-item" onclick="selectLocation('${escapedName}', ${result.lat}, ${result.lon})">
+                            <div class="result-name">${mainName}</div>
+                            <div class="result-address">${result.display_name}</div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                searchResults.innerHTML = '<div class="no-results">No results found in this area. Try adding "New Haven" to your search.</div>';
+            }
+            searchResults.style.display = 'block';
         } catch (error) {
             console.error('Search error:', error);
+            searchResults.innerHTML = '<div class="no-results">❌ Search failed. Please check your connection.</div>';
         }
-    }, 300); // Debounce delay
+    }, 400); // Slightly longer debounce for reliability
 }
 
 // Select a location from search results
@@ -776,28 +837,61 @@ function selectLocation(name, lat, lng) {
     document.getElementById('searchResults').style.display = 'none';
 }
 
-// Use current GPS location
+// Use Current Location Function
 function useCurrentLocation() {
-    if (!currentLocation) {
-        alert('Getting your location...');
-
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function (position) {
-                    currentLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude
-                    };
-                    setCurrentLocationAsCheckin();
-                },
-                function (error) {
-                    alert('Could not get your location. Please search for a place instead.');
-                }
-            );
-        }
-    } else {
-        setCurrentLocationAsCheckin();
+    console.log('useCurrentLocation triggered');
+    // Check if disclosure has been accepted (using localStorage for persistence)
+    if (!localStorage.getItem('locationDisclosureAccepted')) {
+        console.log('Showing disclosure modal');
+        document.getElementById('locationDisclosureModal').style.display = 'flex';
+        return;
     }
+
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser");
+        return;
+    }
+
+    const btn = document.getElementById('useCurrentLocationBtn');
+    const originalText = btn ? btn.innerHTML : '📍 Use My Current Location';
+    if (btn) {
+        btn.innerHTML = '📍 Finding you...';
+        btn.disabled = true;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            currentLocation = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            await setCurrentLocationAsCheckin();
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        },
+        (error) => {
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+            console.error('GPS error:', error);
+            alert('Could not get your location. Please search for a place instead.');
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+}
+
+function acceptLocationDisclosure() {
+    console.log('Disclosure accepted');
+    localStorage.setItem('locationDisclosureAccepted', 'true');
+    closeLocationDisclosure();
+    useCurrentLocation(); // Retry
+}
+
+function closeLocationDisclosure() {
+    document.getElementById('locationDisclosureModal').style.display = 'none';
 }
 
 // Set current location in the form

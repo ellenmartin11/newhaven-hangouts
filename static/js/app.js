@@ -22,12 +22,49 @@ document.addEventListener('DOMContentLoaded', async function () {
             document.getElementById('loginModal').style.display = 'none';
             initMap();
         } else {
-            document.getElementById('loginModal').style.display = 'flex';
+            // No active session. Check for saved credentials for auto-login
+            const savedEmail = localStorage.getItem('rememberedEmail');
+            const savedPassword = localStorage.getItem('rememberedPassword');
+
+            if (savedEmail && savedPassword) {
+                console.log('Attempting auto-login with saved credentials...');
+                const messageEl = document.getElementById('authMessage');
+                if (messageEl) messageEl.innerHTML = '<span style="color: var(--text-secondary);">Logging you back in...</span>';
+                await autoLogin(savedEmail, savedPassword);
+            } else {
+                document.getElementById('loginModal').style.display = 'flex';
+            }
         }
     } catch (error) {
         document.getElementById('loginModal').style.display = 'flex';
     }
 });
+
+// Helper for auto-login
+async function autoLogin(email, password) {
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, remember: true })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            userId = data.user_id;
+            username = data.username;
+            updateUserInterface(username);
+            document.getElementById('loginModal').style.display = 'none';
+            initMap();
+        } else {
+            localStorage.removeItem('rememberedPassword');
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+    } catch (error) {
+        document.getElementById('loginModal').style.display = 'flex';
+    }
+}
+
 
 // --- Theme Logic ---
 function initTheme() {
@@ -102,6 +139,19 @@ function switchAuthMode(mode) {
     document.getElementById('forgotPasswordForm').style.display = 'none';
 }
 
+function togglePasswordVisibility(inputId, toggleBtn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        toggleBtn.innerHTML = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+    } else {
+        input.type = 'password';
+        toggleBtn.innerHTML = '<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+    }
+}
+
 function showForgotPassword() {
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('signupForm').style.display = 'none';
@@ -143,6 +193,7 @@ async function requestPasswordReset() {
 async function performLogin() {
     const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
     const messageEl = document.getElementById('authMessage');
 
     if (!email || !password) {
@@ -156,7 +207,7 @@ async function performLogin() {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, remember: rememberMe })
         });
 
         const data = await response.json();
@@ -168,6 +219,15 @@ async function performLogin() {
             // Update UI
             updateUserInterface(username);
             document.getElementById('loginModal').style.display = 'none';
+
+            // Handle Remember Me
+            if (rememberMe) {
+                localStorage.setItem('rememberedEmail', email);
+                localStorage.setItem('rememberedPassword', password);
+            } else {
+                localStorage.removeItem('rememberedEmail');
+                localStorage.removeItem('rememberedPassword');
+            }
 
             // Initialize map
             initMap();
@@ -250,9 +310,38 @@ async function logout() {
     userId = null;
     username = null;
 
+    // Clear saved credentials
+    localStorage.removeItem('rememberedEmail');
+    localStorage.removeItem('rememberedPassword');
+
     // Reload the page to show login modal
     window.location.reload();
 }
+
+// Delete Account Function
+async function deleteAccount() {
+    const confirmed = confirm("WARNING: This will permanently delete your account and all your check-in history. This action cannot be undone.\n\nAre you absolutely sure?");
+
+    if (!confirmed) return;
+
+    try {
+        const response = await fetch('/api/user/delete', { method: 'DELETE' });
+
+        if (response.ok) {
+            alert("Your account has been deleted. Goodbye! 👋");
+            localStorage.removeItem('rememberedEmail');
+            localStorage.removeItem('rememberedPassword');
+            window.location.reload();
+        } else {
+            const data = await response.json();
+            alert("Deletion failed: " + (data.error || "Unknown error"));
+        }
+    } catch (error) {
+        console.error('Delete account error:', error);
+        alert("Failed to delete account. Please try again.");
+    }
+}
+
 
 
 // Initialize Leaflet map
@@ -632,72 +721,66 @@ async function submitCheckin() {
     }
 }
 
-// Search for location using Nominatim (OpenStreetMap)
-let searchTimeout;
-async function searchLocation(query) {
-    clearTimeout(searchTimeout);
+// Switch between map and list views
+function switchView(view) {
+    console.log('Switching view to:', view);
+    const mapView = document.getElementById('mapView');
+    const listView = document.getElementById('listView');
+    const mapBtn = document.getElementById('mapViewBtn');
+    const listBtn = document.getElementById('listViewBtn');
 
-    const searchResults = document.getElementById('searchResults');
-
-    if (!query || query.length < 3) {
-        searchResults.innerHTML = '';
-        searchResults.style.display = 'none';
+    if (!mapView || !listView || !mapBtn || !listBtn) {
+        console.error('View elements missing:', { mapView, listView, mapBtn, listBtn });
         return;
     }
 
-    searchTimeout = setTimeout(async () => {
-        try {
-            // Search around New Haven, CT
-            const response = await fetch(
-                `https://nominatim.openstreetmap.org/search?` +
-                `q=${encodeURIComponent(query)}&` +
-                `format=json&` +
-                `limit=5&` +
-                `viewbox=-72.98,41.36,-72.87,41.25&` + // New Haven bounding box
-                `bounded=1`
-            );
+    if (view === 'map') {
+        mapView.style.display = 'block';
+        listView.style.display = 'none';
+        mapBtn.classList.add('active');
+        listBtn.classList.remove('active');
 
-            const results = await response.json();
-
-            if (results.length > 0) {
-                searchResults.innerHTML = results.map(result => {
-                    const safeName = result.display_name.replace(/'/g, "\\'");
-                    return `
-                    <div class="search-result-item" onclick="selectLocation('${safeName}', ${result.lat}, ${result.lon})">
-                        <div class="result-name">${result.display_name.split(',')[0]}</div>
-                        <div class="result-address">${result.display_name}</div>
-                    </div>
-                `;
-                }).join('');
-                searchResults.style.display = 'block';
-            } else {
-                searchResults.innerHTML = '<div class="no-results">No results found</div>';
-                searchResults.style.display = 'block';
-            }
-        } catch (error) {
-            console.error('Search error:', error);
+        // Refresh map size
+        if (map) {
+            setTimeout(() => map.invalidateSize(), 150);
         }
-    }, 300); // Debounce delay
+    } else {
+        mapView.style.display = 'none';
+        listView.style.display = 'block';
+        mapBtn.classList.remove('active');
+        listBtn.classList.add('active');
+        
+        if (userId) {
+            loadFeed();
+        }
+    }
 }
 
-// Select a location from search results
-function selectLocation(name, lat, lng) {
-    document.getElementById('locationName').value = name.split(',')[0];
-    document.getElementById('selectedLat').value = lat;
-    document.getElementById('selectedLng').value = lng;
-    document.getElementById('locationSearch').value = name.split(',')[0];
-    document.getElementById('searchResults').innerHTML = '';
-    document.getElementById('searchResults').style.display = 'none';
-}
+
 
 // Use current GPS location
 function useCurrentLocation() {
-    if (!currentLocation) {
-        alert('Getting your location...');
+    // Check if disclosure has been accepted (using localStorage for persistence)
+    if (!localStorage.getItem('locationDisclosureAccepted')) {
+        document.getElementById('locationDisclosureModal').style.display = 'flex';
+        return;
+    }
 
-        // Check if we are in a secure context (required for Geolocation on Mobile)
+    if (!currentLocation) {
+        const btn = document.getElementById('useCurrentLocationBtn');
+        const originalText = btn ? btn.innerHTML : '📍 Use My Current Location';
+        if (btn) {
+            btn.innerHTML = '📍 Finding you...';
+            btn.disabled = true;
+        }
+
+        // Check if we are in a secure context
         if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
-            alert('Location access requires a secure connection (HTTPS). On Android/Mobile, please use a secure tunnel (like ngrok) or standard HTTPS.');
+            alert('Location access requires a secure connection (HTTPS).');
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
             return;
         }
 
@@ -708,46 +791,43 @@ function useCurrentLocation() {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     };
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
                     setCurrentLocationAsCheckin();
                 },
                 function (error) {
+                    if (btn) {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                    }
                     let errorMessage = 'Could not get your location.';
-
-                    switch (error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMessage = 'Location permission denied. Please enable it in your browser settings.';
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMessage = 'Location information is unavailable. Please make sure GPS is on.';
-                            break;
-                        case error.TIMEOUT:
-                            errorMessage = 'The request to get user location timed out.';
-                            break;
-                        default:
-                            errorMessage = 'An unknown error occurred getting location.';
-                            break;
-                    }
-
-                    // Specific hint for non-secure origins if not already caught
-                    if (!window.isSecureContext) {
-                        errorMessage += '\n(Note: Mobile browsers require HTTPS for location access)';
-                    }
-
                     alert(errorMessage + '\nPlease search for a place instead.');
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
                 }
             );
         } else {
             alert('Geolocation is not supported by this browser.');
+            if (btn) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
         }
     } else {
         setCurrentLocationAsCheckin();
     }
 }
+
+function acceptLocationDisclosure() {
+    localStorage.setItem('locationDisclosureAccepted', 'true');
+    closeLocationDisclosure();
+    useCurrentLocation();
+}
+
+function closeLocationDisclosure() {
+    document.getElementById('locationDisclosureModal').style.display = 'none';
+}
+
 
 // Set current location in the form
 async function setCurrentLocationAsCheckin() {
