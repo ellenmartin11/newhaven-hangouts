@@ -709,7 +709,8 @@ body {
     top: 1.25rem;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1500;
+    z-index: 9999;
+    pointer-events: auto !important;
     background: var(--glass-bg);
     backdrop-filter: var(--glass-blur);
     -webkit-backdrop-filter: var(--glass-blur);

@@ -506,14 +506,17 @@ function updateListView(checkins) {
 
 // Switch between map and list views
 function switchView(view) {
-    console.log('Switching view to:', view);
+    console.log('switchView called with:', view);
+    // Use an alert to verify it's working on the emulator
+    // alert('Switching to: ' + view); 
+
     const mapView = document.getElementById('mapView');
     const listView = document.getElementById('listView');
     const mapBtn = document.getElementById('mapViewBtn');
     const listBtn = document.getElementById('listViewBtn');
 
     if (!mapView || !listView || !mapBtn || !listBtn) {
-        console.error('View elements missing:', { mapView, listView, mapBtn, listBtn });
+        console.error('View elements missing');
         return;
     }
 
@@ -523,24 +526,28 @@ function switchView(view) {
         mapBtn.classList.add('active');
         listBtn.classList.remove('active');
 
-        // Refresh map size
         if (map) {
-            console.log('Refreshing map size');
             setTimeout(() => map.invalidateSize(), 150);
         }
     } else {
-        console.log('Showing list view');
         mapView.style.display = 'none';
         listView.style.display = 'block';
         mapBtn.classList.remove('active');
         listBtn.classList.add('active');
 
-        // Ensure feed is loaded when switching to list
         if (userId) {
             loadFeed();
         }
     }
 }
+
+// Add touch listeners for faster response on mobile emulators
+document.addEventListener('DOMContentLoaded', () => {
+    const mapBtn = document.getElementById('mapViewBtn');
+    const listBtn = document.getElementById('listViewBtn');
+    if (mapBtn) mapBtn.addEventListener('touchstart', (e) => { e.preventDefault(); switchView('map'); });
+    if (listBtn) listBtn.addEventListener('touchstart', (e) => { e.preventDefault(); switchView('list'); });
+});
 
 // Add a check-in marker to the map
 function addCheckinMarker(checkin) {
