@@ -28,3 +28,11 @@ Thumbs.db
 # Flask
 instance/
 .pytest_cache/
+
+# Mobile App
+mobile-app/node_modules/
+mobile-app/android/
+mobile-app/ios/
+mobile-app/www/
+mobile-app/assets/
+*.log
