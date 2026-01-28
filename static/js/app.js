@@ -660,12 +660,15 @@ async function searchLocation(query) {
             const results = await response.json();
 
             if (results.length > 0) {
-                searchResults.innerHTML = results.map(result => `
-                    <div class="search-result-item" onclick="selectLocation('${result.display_name}', ${result.lat}, ${result.lon})">
+                searchResults.innerHTML = results.map(result => {
+                    const safeName = result.display_name.replace(/'/g, "\\'");
+                    return `
+                    <div class="search-result-item" onclick="selectLocation('${safeName}', ${result.lat}, ${result.lon})">
                         <div class="result-name">${result.display_name.split(',')[0]}</div>
                         <div class="result-address">${result.display_name}</div>
                     </div>
-                `).join('');
+                `;
+                }).join('');
                 searchResults.style.display = 'block';
             } else {
                 searchResults.innerHTML = '<div class="no-results">No results found</div>';
@@ -692,6 +695,12 @@ function useCurrentLocation() {
     if (!currentLocation) {
         alert('Getting your location...');
 
+        // Check if we are in a secure context (required for Geolocation on Mobile)
+        if (!window.isSecureContext && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+            alert('Location access requires a secure connection (HTTPS). On Android/Mobile, please use a secure tunnel (like ngrok) or standard HTTPS.');
+            return;
+        }
+
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 function (position) {
@@ -702,9 +711,38 @@ function useCurrentLocation() {
                     setCurrentLocationAsCheckin();
                 },
                 function (error) {
-                    alert('Could not get your location. Please search for a place instead.');
+                    let errorMessage = 'Could not get your location.';
+
+                    switch (error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location permission denied. Please enable it in your browser settings.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is unavailable. Please make sure GPS is on.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'The request to get user location timed out.';
+                            break;
+                        default:
+                            errorMessage = 'An unknown error occurred getting location.';
+                            break;
+                    }
+
+                    // Specific hint for non-secure origins if not already caught
+                    if (!window.isSecureContext) {
+                        errorMessage += '\n(Note: Mobile browsers require HTTPS for location access)';
+                    }
+
+                    alert(errorMessage + '\nPlease search for a place instead.');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
                 }
             );
+        } else {
+            alert('Geolocation is not supported by this browser.');
         }
     } else {
         setCurrentLocationAsCheckin();

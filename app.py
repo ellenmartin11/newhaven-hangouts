@@ -142,7 +142,7 @@ def signup():
         if new_user.data and len(new_user.data) > 0:
             user_data = new_user.data[0]
             user = User(user_data['id'], user_data['username'], user_data['email'])
-            login_user(user)
+            login_user(user, remember=True)
             
             return jsonify({
                 'user_id': user_data['id'],
@@ -184,8 +184,9 @@ def login():
             return jsonify({'error': 'Invalid email or password'}), 401
         
         # Log in user
+        remember = data.get('remember', False)
         user = User(user_data['id'], user_data['username'], user_data['email'])
-        login_user(user)
+        login_user(user, remember=remember)
         
         return jsonify({
             'user_id': user_data['id'],

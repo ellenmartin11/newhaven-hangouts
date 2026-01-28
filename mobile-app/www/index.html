@@ -62,8 +62,15 @@
                 <!-- Login Form -->
                 <div id="loginForm" class="auth-form">
                     <input type="email" id="loginEmail" placeholder="Email" />
-                    <input type="password" id="loginPassword" placeholder="Password" />
+                    <div class="password-input-container">
+                        <input type="password" id="loginPassword" placeholder="Password" />
+                        <button type="button" class="password-toggle"
+                            onclick="togglePasswordVisibility('loginPassword', this)">👁️</button>
+                    </div>
                     <div class="form-actions">
+                        <label class="remember-me">
+                            <input type="checkbox" id="rememberMe"> Remember Me
+                        </label>
                         <button class="btn btn-primary" onclick="performLogin()">Login</button>
                         <a href="#" class="forgot-password" onclick="showForgotPassword()">Forgot Password?</a>
                     </div>
@@ -82,8 +89,16 @@
                 <div id="signupForm" class="auth-form" style="display: none;">
                     <input type="text" id="signupUsername" placeholder="Username" />
                     <input type="email" id="signupEmail" placeholder="Email" />
-                    <input type="password" id="signupPassword" placeholder="Password" />
-                    <input type="password" id="signupConfirmPassword" placeholder="Confirm Password" />
+                    <div class="password-input-container">
+                        <input type="password" id="signupPassword" placeholder="Password" />
+                        <button type="button" class="password-toggle"
+                            onclick="togglePasswordVisibility('signupPassword', this)">👁️</button>
+                    </div>
+                    <div class="password-input-container">
+                        <input type="password" id="signupConfirmPassword" placeholder="Confirm Password" />
+                        <button type="button" class="password-toggle"
+                            onclick="togglePasswordVisibility('signupConfirmPassword', this)">👁️</button>
+                    </div>
                     <button class="btn btn-primary" onclick="performSignup()">Sign Up</button>
                 </div>
 

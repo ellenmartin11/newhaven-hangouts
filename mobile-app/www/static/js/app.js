@@ -29,12 +29,54 @@ document.addEventListener('DOMContentLoaded', async function () {
             document.getElementById('loginModal').style.display = 'none';
             initMap();
         } else {
-            document.getElementById('loginModal').style.display = 'flex';
+            // No active session. Check for saved credentials for auto-login
+            const savedEmail = localStorage.getItem('rememberedEmail');
+            const savedPassword = localStorage.getItem('rememberedPassword');
+
+            if (savedEmail && savedPassword) {
+                console.log('Attempting auto-login with saved credentials...');
+                // Briefly show a loading state if possible
+                const messageEl = document.getElementById('authMessage');
+                if (messageEl) messageEl.innerHTML = '<span style="color: var(--text-secondary);">Logging you back in...</span>';
+
+                // We use the normal performLogin logic but with saved values
+                await autoLogin(savedEmail, savedPassword);
+            } else {
+                document.getElementById('loginModal').style.display = 'flex';
+            }
         }
     } catch (error) {
         document.getElementById('loginModal').style.display = 'flex';
     }
 });
+
+// Helper for auto-login to avoid infinite recursion or complex state
+async function autoLogin(email, password) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email, password, remember: true })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            userId = data.user_id;
+            username = data.username;
+            updateUserInterface(username);
+            document.getElementById('loginModal').style.display = 'none';
+            initMap();
+        } else {
+            // Auto-login failed (maybe password changed)
+            localStorage.removeItem('rememberedPassword');
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+    } catch (error) {
+        document.getElementById('loginModal').style.display = 'flex';
+    }
+}
+
 
 // --- Theme Logic ---
 function initTheme() {
@@ -109,6 +151,19 @@ function switchAuthMode(mode) {
     document.getElementById('forgotPasswordForm').style.display = 'none';
 }
 
+function togglePasswordVisibility(inputId, toggleBtn) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        toggleBtn.textContent = '🙈'; // Eye closed
+    } else {
+        input.type = 'password';
+        toggleBtn.textContent = '👁️'; // Eye open
+    }
+}
+
 function showForgotPassword() {
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('signupForm').style.display = 'none';
@@ -158,13 +213,14 @@ async function performLogin() {
     }
 
     try {
+        const rememberMe = document.getElementById('rememberMe').checked;
         const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             credentials: 'include',
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, remember: rememberMe })
         });
 
         console.log('Login Response Status:', response.status);
@@ -185,6 +241,16 @@ async function performLogin() {
             // Update UI
             updateUserInterface(username);
             document.getElementById('loginModal').style.display = 'none';
+
+            // Save credentials if Remember Me is checked
+            const rememberMe = document.getElementById('rememberMe').checked;
+            if (rememberMe) {
+                localStorage.setItem('rememberedEmail', email);
+                localStorage.setItem('rememberedPassword', password);
+            } else {
+                localStorage.removeItem('rememberedEmail');
+                localStorage.removeItem('rememberedPassword');
+            }
 
             // Initialize map
             initMap();
@@ -270,6 +336,10 @@ async function logout() {
     // Reset variables
     userId = null;
     username = null;
+
+    // Clear saved credentials
+    localStorage.removeItem('rememberedEmail');
+    localStorage.removeItem('rememberedPassword');
 
     // Reload the page to show login modal
     window.location.reload();
