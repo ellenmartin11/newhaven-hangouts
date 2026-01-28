@@ -12,12 +12,64 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="static/css/style.css">
+    <link rel="stylesheet" href="static/css/landing.css">
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 
 <body>
+    <!-- Landing Page Overlay -->
+    <div id="landing-overlay">
+        <div id="landing-aura">
+            <div class="aura-blob blob-1"></div>
+            <div class="aura-blob blob-2"></div>
+            <div class="aura-blob blob-3"></div>
+        </div>
+
+        <div id="landing-swiper">
+            <!-- Slide 1: Welcome -->
+            <div class="landing-slide">
+                <div class="slide-content">
+                    <h1>New Haven Hangouts</h1>
+                    <p>Stop scrolling, start hanging. Connect with your friends in the real world.</p>
+                </div>
+            </div>
+
+            <!-- Slide 2: Favorite Spots -->
+            <div class="landing-slide">
+                <div class="slide-content">
+                    <h2>Favorite Spots</h2>
+                    <p>Check-in at your favorite haunts and let friends know where you are.</p>
+                </div>
+            </div>
+
+            <!-- Slide 3: Signal -->
+            <div class="landing-slide">
+                <div class="slide-content">
+                    <h2>Down to Hang?</h2>
+                    <p>Signal to your crew that you're available for a catch-up.</p>
+                </div>
+            </div>
+
+            <!-- Slide 4: CTA -->
+            <div class="landing-slide">
+                <div class="slide-content">
+                    <h2>Ready to Check-In?</h2>
+                    <p>Your friends are waiting!</p>
+                    <button class="cta-button" onclick="dismissLanding()">Get Started</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="landing-pagination">
+            <div class="dot active"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Header -->
         <!-- FAB Navigation -->
@@ -277,6 +329,7 @@
 
     <!-- Custom JS -->
     <script src="static/js/app.js"></script>
+    <script src="static/js/landing.js"></script>
 </body>
 
 </html>

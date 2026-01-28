@@ -15,6 +15,13 @@ const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
+    // Check if onboarding is needed
+    const onboardingSeen = localStorage.getItem('onboarding_seen');
+    if (!onboardingSeen) {
+        // Landing page handles its own display
+        console.log('Onboarding needed');
+    }
+
     // Initialize Theme
     initTheme();
 
@@ -149,6 +156,15 @@ function switchAuthMode(mode) {
         signupTab.classList.add('active');
     }
     document.getElementById('forgotPasswordForm').style.display = 'none';
+}
+
+// Global helper for landing page to open signup modal
+window.openSignupModal = function () {
+    const modal = document.getElementById('loginModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        switchAuthMode('signup');
+    }
 }
 
 function togglePasswordVisibility(inputId, toggleBtn) {

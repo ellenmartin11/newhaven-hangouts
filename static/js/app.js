@@ -137,6 +137,13 @@ function switchAuthMode(mode) {
         signupTab.classList.add('active');
     }
     document.getElementById('forgotPasswordForm').style.display = 'none';
+    document.getElementById('authMessage').innerHTML = '';
+}
+
+// Helper for landing page to open signup directly
+function openSignupModal() {
+    switchAuthMode('signup');
+    document.getElementById('loginModal').style.display = 'flex';
 }
 
 function togglePasswordVisibility(inputId, toggleBtn) {
@@ -749,7 +756,7 @@ function switchView(view) {
         listView.style.display = 'block';
         mapBtn.classList.remove('active');
         listBtn.classList.add('active');
-        
+
         if (userId) {
             loadFeed();
         }
