@@ -107,6 +107,12 @@ def stats_page():
     return render_template('stats.html')
 
 
+@app.route('/child-safety')
+def child_safety_page():
+    """Serve the child safety page"""
+    return render_template('child-safety.html')
+
+
 @app.route('/api/signup', methods=['POST'])
 def signup():
     """
