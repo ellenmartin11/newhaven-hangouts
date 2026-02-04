@@ -809,16 +809,19 @@ async function searchLocation(query) {
     searchTimeout = setTimeout(async () => {
         try {
             console.log('Searching OSM for:', query);
-            // Search with New Haven bias but NOT strict bounds
+            // Connecticut Bounds
+            // viewbox=left,top,right,bottom
+            // Approx: -73.77 (Greenwich), 42.05 (MA border), -71.79 (RI border), 40.98 (Sound)
+            // Using slightly wider box to be safe: -74.0,42.1,-71.5,40.9
             const response = await fetch(
                 `https://nominatim.openstreetmap.org/search?` +
                 `q=${encodeURIComponent(query)}&` +
                 `format=json&` +
-                `limit=5&` +
-                `viewbox=-73.1,41.4,-72.8,41.2&` + // Wider bias area
-                `bounded=0&` + // Bias, don't force
                 `addressdetails=1&` +
-                `accept-language=en`
+                `limit=5&` +
+                `countrycodes=us&` +
+                `viewbox=-73.8,42.1,-71.7,40.9&` +
+                `bounded=1`
             );
 
             if (!response.ok) {

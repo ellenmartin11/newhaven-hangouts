@@ -836,6 +836,77 @@ function closeLocationDisclosure() {
 }
 
 
+// Search for a location using Nominatim API
+let searchTimeout = null;
+
+async function searchLocation(query) {
+    const resultsContainer = document.getElementById('searchResults');
+
+    if (!query || query.length < 3) {
+        resultsContainer.style.display = 'none';
+        resultsContainer.innerHTML = '';
+        return;
+    }
+
+    // Debounce search
+    if (searchTimeout) clearTimeout(searchTimeout);
+
+    searchTimeout = setTimeout(async () => {
+        try {
+            // Connecticut Bounds
+            // viewbox=left,top,right,bottom
+            // Approx: -73.77 (Greenwich), 42.05 (MA border), -71.79 (RI border), 40.98 (Sound)
+            // Using slightly wider box to be safe: -74.0,42.1,-71.5,40.9
+            const response = await fetch(
+                `https://nominatim.openstreetmap.org/search?` +
+                `q=${encodeURIComponent(query)}&` +
+                `format=json&` +
+                `addressdetails=1&` +
+                `limit=5&` +
+                `countrycodes=us&` +
+                `viewbox=-73.8,42.1,-71.7,40.9&` +
+                `bounded=1`
+            );
+
+            const data = await response.json();
+
+            if (data.length === 0) {
+                resultsContainer.style.display = 'none';
+                return;
+            }
+
+            resultsContainer.innerHTML = data.map(item => {
+                // Construct a friendly name
+                const name = item.name || item.address.amenity || item.address.shop || item.address.building || item.display_name.split(',')[0];
+                const fullAddress = item.display_name;
+
+                return `
+                    <div class="search-result-item" onclick="selectLocation(${item.lat}, ${item.lon}, '${name.replace(/'/g, "\\'")}')">
+                        <div class="result-name">${name}</div>
+                        <div class="result-address">${fullAddress}</div>
+                    </div>
+                `;
+            }).join('');
+
+            resultsContainer.style.display = 'block';
+
+        } catch (error) {
+            console.error('Search error:', error);
+        }
+    }, 500); // 500ms debounce
+}
+
+// Select a location from search results
+function selectLocation(lat, lng, name) {
+    document.getElementById('locationName').value = name;
+    document.getElementById('locationSearch').value = name;
+    document.getElementById('selectedLat').value = lat;
+    document.getElementById('selectedLng').value = lng;
+
+    // Hide search results
+    document.getElementById('searchResults').style.display = 'none';
+}
+
 // Set current location in the form
 async function setCurrentLocationAsCheckin() {
     document.getElementById('selectedLat').value = currentLocation.lat;
