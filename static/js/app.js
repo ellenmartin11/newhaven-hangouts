@@ -6,6 +6,11 @@ let username = null;
 let currentLocation = null;
 let markers = [];
 
+// API Configuration
+// For Android Emulator, use 'http://10.0.2.2:8000'
+// For Web/Production, use '' (relative path)
+const API_BASE_URL = window.Capacitor ? 'http://10.0.2.2:8000' : '';
+
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
     // Initialize Theme
@@ -13,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Check if user is logged in (session-based)
     try {
-        const response = await fetch('/api/current_user');
+        const response = await fetch(`${API_BASE_URL}/api/current_user`);
         if (response.ok) {
             const data = await response.json();
             userId = data.user_id;
@@ -21,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             updateUserInterface(username);
             document.getElementById('loginModal').style.display = 'none';
             initMap();
+            startNotificationPolling();
         } else {
             // No active session. Check for saved credentials for auto-login
             const savedEmail = localStorage.getItem('rememberedEmail');
@@ -43,7 +49,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 // Helper for auto-login
 async function autoLogin(email, password) {
     try {
-        const response = await fetch('/api/login', {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, remember: true })
@@ -56,6 +62,8 @@ async function autoLogin(email, password) {
             updateUserInterface(username);
             document.getElementById('loginModal').style.display = 'none';
             initMap();
+            startNotificationPolling();
+            if (window.setupPushNotifications) window.setupPushNotifications(userId);
         } else {
             localStorage.removeItem('rememberedPassword');
             document.getElementById('loginModal').style.display = 'flex';
@@ -178,7 +186,7 @@ async function requestPasswordReset() {
     messageEl.innerHTML = '<span style="color: var(--text-secondary);">Sending...</span>';
 
     try {
-        const response = await fetch('/api/auth/reset-password-request', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/reset-password-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email })
@@ -209,7 +217,7 @@ async function performLogin() {
     }
 
     try {
-        const response = await fetch('/api/login', {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -238,6 +246,8 @@ async function performLogin() {
 
             // Initialize map
             initMap();
+            startNotificationPolling();
+            if (window.setupPushNotifications) window.setupPushNotifications(userId);
         } else {
             messageEl.innerHTML = `<span class="error">${data.error}</span>`;
         }
@@ -271,7 +281,7 @@ async function performSignup() {
     }
 
     try {
-        const response = await fetch('/api/signup', {
+        const response = await fetch(`${API_BASE_URL}/api/signup`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -296,6 +306,7 @@ async function performSignup() {
 
             // Initialize map
             initMap();
+            startNotificationPolling();
         } else {
             messageEl.innerHTML = `<span class="error">${data.error}</span>`;
         }
@@ -304,11 +315,10 @@ async function performSignup() {
         messageEl.innerHTML = '<span class="error">Signup failed. Please try again.</span>';
     }
 }
-
 // Logout function
 async function logout() {
     try {
-        await fetch('/api/logout', { method: 'POST' });
+        await fetch(`${API_BASE_URL}/api/logout`, { method: 'POST' });
     } catch (error) {
         console.error('Logout error:', error);
     }
@@ -332,7 +342,7 @@ async function deleteAccount() {
     if (!confirmed) return;
 
     try {
-        const response = await fetch('/api/user/delete', { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/user/delete`, { method: 'DELETE' });
 
         if (response.ok) {
             alert("Your account has been deleted. Goodbye! 👋");
@@ -402,7 +412,7 @@ async function loadFeed() {
     if (!userId) return;
 
     try {
-        const response = await fetch(`/api/feed?user_id=${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/feed?user_id=${userId}`);
         const data = await response.json();
 
         if (response.ok) {
@@ -615,7 +625,7 @@ let cachedFriends = [];
 async function loadFriendsForSelection() {
     const container = document.getElementById('friendsCheckboxes');
     try {
-        const response = await fetch('/api/friends');
+        const response = await fetch(`${API_BASE_URL}/api/friends`);
         const data = await response.json();
 
         if (response.ok) {
@@ -696,7 +706,7 @@ async function submitCheckin() {
     }
 
     try {
-        const response = await fetch('/api/checkin', {
+        const response = await fetch(`${API_BASE_URL}/api/checkin`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -993,4 +1003,145 @@ async function deleteCheckin(checkinId) {
         console.error('Delete error:', error);
         alert('Failed to delete check-in. Please try again.');
     }
+}
+
+// --- NOTIFICATION SYSTEM ---
+let notificationPollingInterval = null;
+let lastNotificationCount = 0;
+
+function startNotificationPolling() {
+    const btn = document.getElementById('notificationBtn');
+    if (btn) btn.style.display = 'flex';
+
+    // Initial load
+    loadNotifications();
+
+    // Check permission for system notifications
+    if ("Notification" in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        Notification.requestPermission();
+    }
+
+    // Clear existing interval if any
+    if (notificationPollingInterval) clearInterval(notificationPollingInterval);
+
+    // Poll every 30 seconds
+    notificationPollingInterval = setInterval(loadNotifications, 30000);
+}
+
+async function loadNotifications() {
+    if (!userId) return;
+
+    try {
+        const response = await fetch('/api/notifications');
+        const data = await response.json();
+
+        if (response.ok) {
+            updateNotificationUI(data.notifications);
+        }
+    } catch (error) {
+        console.error('Error loading notifications:', error);
+    }
+}
+
+function updateNotificationUI(notifications) {
+    const badge = document.getElementById('notificationBadge');
+    const listEl = document.getElementById('notificationsList');
+
+    if (!notifications) return;
+
+    // Count unread
+    const unreadCount = notifications.filter(n => !n.is_read).length;
+
+    // Update Badge
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount;
+        badge.classList.remove('badge-hidden');
+
+        // Check if new notifications arrived or just update
+        if (unreadCount > lastNotificationCount) {
+            // Show system notification for the latest unread one
+            const latest = notifications[0];
+            if (latest && !latest.is_read && "Notification" in window && Notification.permission === 'granted') {
+                try {
+                    new Notification(latest.title, {
+                        body: latest.body,
+                        icon: '/static/img/icon.png'
+                    });
+                } catch (e) { }
+            }
+        }
+    } else {
+        badge.classList.add('badge-hidden');
+    }
+    lastNotificationCount = unreadCount;
+
+    // Update List
+    if (notifications.length === 0) {
+        if (listEl) listEl.innerHTML = '<div class="empty-notifications">No notifications yet</div>';
+        return;
+    }
+
+    if (listEl) {
+        listEl.innerHTML = notifications.map(n => `
+            <div class="notification-item ${n.is_read ? 'read' : 'unread'}" onclick="handleNotificationClick('${n.id}', '${n.related_id}', '${n.type}')">
+                <div class="notification-title">${escapeHtml(n.title)}</div>
+                <div class="notification-body">${escapeHtml(n.body)}</div>
+                <div class="notification-time">${formatTime(n.created_at)}</div>
+            </div>
+        `).join('');
+    }
+}
+
+function showNotifications() {
+    document.getElementById('notificationsModal').style.display = 'flex';
+    // Refetch to be fresh
+    loadNotifications();
+}
+
+function closeNotifications() {
+    document.getElementById('notificationsModal').style.display = 'none';
+}
+
+async function markAllNotificationsRead() {
+    try {
+        await fetch(`${API_BASE_URL}/api/notifications/mark-read`, {
+            method: 'POST',
+            body: JSON.stringify({ all: true }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        loadNotifications();
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function handleNotificationClick(nid, relatedId, type) {
+    // Mark as read
+    try {
+        fetch(`${API_BASE_URL}/api/notifications/mark-read`, {
+            method: 'POST',
+            body: JSON.stringify({ notification_id: nid }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (e) { } // background
+
+    // Handle navigation based on type
+    closeNotifications();
+
+    if (type === 'checkin_alert' || type === 'coming_alert') {
+        loadFeed();
+        switchView('list');
+    } else if (type === 'friend_request' || type === 'friend_accept') {
+        window.location.href = '/friends';
+    }
+
+    // Optimistic update
+    loadNotifications();
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

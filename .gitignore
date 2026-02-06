@@ -36,3 +36,6 @@ mobile-app/ios/
 mobile-app/www/
 mobile-app/assets/
 *.log
+
+# Secrets
+serviceAccountKey.json

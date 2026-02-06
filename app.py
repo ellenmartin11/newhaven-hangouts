@@ -14,6 +14,8 @@ import uuid
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 from flask_cors import CORS
+import firebase_admin
+from firebase_admin import credentials, messaging
 
 # Load environment variables
 load_dotenv()
@@ -55,6 +57,50 @@ SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_SERVICE_ROLE_KEY') or os.getenv('SUPABASE_KEY')
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
+# Initialize Firebase Admin SDK
+try:
+    # Check for service account key file
+    cred_path = os.getenv('FIREBASE_CREDENTIALS', 'serviceAccountKey.json')
+    if os.path.exists(cred_path):
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK initialized successfully")
+    else:
+        print(f"Warning: Firebase credentials not found at {cred_path}. Push notifications will not work.")
+except Exception as e:
+    print(f"Error initializing Firebase: {e}")
+
+
+# --- Helper Functions ---
+
+def send_push_notification(token, title, body, data=None):
+    """Send FCM push notification"""
+    try:
+        if not firebase_admin._apps:
+            return
+            
+        message = messaging.Message(
+            notification=messaging.Notification(
+                title=title,
+                body=body,
+            ),
+            data=data or {},
+            token=token,
+            android=messaging.AndroidConfig(
+                notification=messaging.AndroidNotification(
+                    channel_id='hangouts_alerts',
+                    priority='high',
+                    default_sound=True,
+                    default_vibrate_timings=True
+                ),
+                priority='high'
+            )
+        )
+        response = messaging.send(message)
+        print('FCM success:', response)
+    except Exception as e:
+        print('FCM error:', e)
+
 # Initialize Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -80,6 +126,57 @@ def load_user(user_id):
     return None
 
 
+
+# Helper function for creating notifications
+def create_notifications(recipient_ids, sender_id, type, title, body, related_id=None):
+    """
+    Create notifications for one or multiple users
+    recipient_ids: list of user_ids
+    """
+    if not recipient_ids:
+        return
+        
+    notifications = []
+    for uid in recipient_ids:
+        # Don't notify yourself
+        if uid == sender_id:
+            continue
+            
+        notifications.append({
+            'user_id': uid,
+            'sender_id': sender_id,
+            'type': type,
+            'title': title,
+            'body': body,
+            'related_id': related_id
+        })
+    
+    if notifications:
+        try:
+            print(f"Sending {len(notifications)} notifications...")
+            data = supabase.table('notifications').insert(notifications).execute()
+            print("Notifications sent successfully:", data)
+            
+            # Send Push Notifications
+            try:
+                # Fetch recipient tokens
+                users = supabase.table('users').select('id, fcm_token').in_('id', recipient_ids).execute()
+                for user in users.data:
+                    if user.get('fcm_token'):
+                        # Find the matching notification to get body/title
+                        notif = next((n for n in notifications if n['user_id'] == user['id']), None)
+                        if notif:
+                            send_push_notification(
+                                user['fcm_token'], 
+                                notif['title'], 
+                                notif['body'],
+                                {'type': notif['type'], 'related_id': notif.get('related_id', '')}
+                            )
+            except Exception as push_error:
+                print(f"Error sending push: {push_error}")
+                
+        except Exception as e:
+            print(f"Error sending notifications: {e}")
 
 # ==================== ROUTES ====================
 
@@ -463,9 +560,50 @@ def checkin():
         }).execute()
         
         if response.data:
+            checkin_data = response.data[0]
+            checkin_id = checkin_data['id']
+            
+            # --- SEND NOTIFICATIONS ---
+            try:
+                # Determine recipients
+                recipients = []
+                if visibility == 'specific':
+                    recipients = share_with
+                else:
+                    # Get all confirmed friends
+                    friends_response = supabase.table('friendships').select('friend_id').eq(
+                        'user_id', user_id
+                    ).eq('status', 'accepted').execute()
+                    recipients = [f['friend_id'] for f in friends_response.data]
+
+                # Format duration string
+                hours = duration_minutes // 60
+                mins = duration_minutes % 60
+                duration_str = ""
+                if hours > 0:
+                    duration_str += f"{hours} hr"
+                    if hours > 1: duration_str += "s"
+                if mins > 0:
+                    if duration_str: duration_str += " "
+                    duration_str += f"{mins} min"
+                
+                # Create notifications
+                pusher_name = current_user.username if current_user.is_authenticated else "Someone"
+                
+                create_notifications(
+                    recipients, 
+                    user_id, 
+                    'checkin_alert', 
+                    f"{pusher_name} is hanging out!", 
+                    f"{pusher_name} has checked into {location_name} for {duration_str}! Are you coming?",
+                    checkin_id
+                )
+            except Exception as e:
+                print(f"Notification error: {e}")
+
             return jsonify({
                 'success': True,
-                'checkin': response.data[0]
+                'checkin': checkin_data
             }), 201
         else:
             return jsonify({'error': 'Failed to create check-in'}), 500
@@ -620,8 +758,10 @@ def coming():
         ).eq('id', checkin_id).execute()
         
         if checkin.data and len(checkin.data) > 0:
-            owner = checkin.data[0]['users']
-            location = checkin.data[0]['location_name']
+            checkin_record = checkin.data[0]
+            owner = checkin_record['users']
+            owner_id = checkin_record['user_id']
+            location = checkin_record['location_name']
             
             # Get the person who is coming
             comer = supabase.table('users').select('username').eq('id', user_id).execute()
@@ -629,6 +769,16 @@ def coming():
             
             # Mock notification (in production, send via FCM)
             print(f"📱 NOTIFICATION to {owner['username']}: {comer_name} is coming to your check-in at {location}!")
+            
+            # Database Notification
+            create_notifications(
+                [owner_id], 
+                user_id, 
+                'coming_alert', 
+                "Friend incoming!", 
+                f"{comer_name} is coming to your hang at {location}!",
+                checkin_id
+            )
         
         return jsonify({
             'success': True,
@@ -748,6 +898,16 @@ def add_friend():
             'status': 'pending'
         }).execute()
         
+        # Notification
+        create_notifications(
+            [friend_id], 
+            current_user.id, 
+            'friend_request', 
+            "New Friend Request", 
+            f"{current_user.username} wants to be friends!",
+            current_user.id
+        )
+        
         return jsonify({
             'success': True,
             'message': f'Friend request sent to {friend["username"]}'
@@ -809,6 +969,16 @@ def accept_friend_request():
             'friend_id': requester_id,
             'status': 'accepted'
         }).execute()
+        
+        # Notification
+        create_notifications(
+            [requester_id], 
+            current_user.id, 
+            'friend_accept', 
+            "Friend Request Accepted", 
+            f"{current_user.username} accepted your friend request!",
+            current_user.id
+        )
         
         return jsonify({
             'success': True,
@@ -873,7 +1043,110 @@ def get_friends():
 
 
 
-# For Vercel, the app object is imported directly
+# ==================== NOTIFICATION ROUTES ====================
+
+@app.route('/api/notifications', methods=['GET'])
+@login_required
+def get_notifications():
+    """Get notifications for current user"""
+    try:
+        # Get last 50 notifications
+        # Avoiding complex join syntax to prevent FK naming errors
+        response = supabase.table('notifications').select('*').eq(
+            'user_id', current_user.id
+        ).order('created_at', desc=True).limit(50).execute()
+        
+        raw_notifs = response.data if response.data else []
+        
+        # Collect sender IDs to fetch usernames
+        sender_ids = set()
+        for n in raw_notifs:
+            if n.get('sender_id'):
+                sender_ids.add(n['sender_id'])
+                
+        # Fetch usernames
+        sender_map = {}
+        if sender_ids:
+            users_response = supabase.table('users').select('id, username').in_('id', list(sender_ids)).execute()
+            if users_response.data:
+                for u in users_response.data:
+                    sender_map[u['id']] = u['username']
+        
+        notifications = []
+        for n in raw_notifs:
+            sender_name = 'System'
+            if n.get('sender_id') and n['sender_id'] in sender_map:
+                sender_name = sender_map[n['sender_id']]
+                
+            notifications.append({
+                'id': n['id'],
+                'type': n['type'],
+                'title': n['title'],
+                'body': n['body'],
+                'is_read': n['is_read'],
+                'created_at': n['created_at'],
+                'sender_username': sender_name,
+                'related_id': n['related_id']
+            })
+            
+        return jsonify({'notifications': notifications}), 200
+        
+    except Exception as e:
+        print(f"Error fetching notifications: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/fcm-token', methods=['POST'])
+@login_required
+def save_fcm_token():
+    """Save FCM token for push notifications"""
+    try:
+        data = request.json
+        token = data.get('token')
+        
+        if not token:
+            return jsonify({'error': 'Token required'}), 400
+            
+        supabase.table('users').update({
+            'fcm_token': token
+        }).eq('id', current_user.id).execute()
+        
+        return jsonify({'success': True, 'message': 'Token saved'}), 200
+    except Exception as e:
+        print(f"Error saving FCM token: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/notifications/mark-read', methods=['POST'])
+@login_required
+def mark_notifications_read():
+    """
+    Mark notifications as read
+    Accepts: { "notification_id": "uuid" } or { "all": true }
+    """
+    try:
+        data = request.json
+        notification_id = data.get('notification_id')
+        mark_all = data.get('all', False)
+        
+        if mark_all:
+            supabase.table('notifications').update({
+                'is_read': True
+            }).eq('user_id', current_user.id).execute()
+        elif notification_id:
+            supabase.table('notifications').update({
+                'is_read': True
+            }).eq('id', notification_id).eq('user_id', current_user.id).execute()
+        else:
+            return jsonify({'error': 'Missing notification_id or all flag'}), 400
+            
+        return jsonify({'success': True}), 200
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
 # For local development:
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)

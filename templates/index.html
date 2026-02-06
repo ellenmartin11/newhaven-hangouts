@@ -225,8 +225,33 @@
             </div>
         </div>
 
+
+
+        <!-- Notifications Modal -->
+        <div class="modal" id="notificationsModal">
+            <div class="notifications-modal-content">
+                <div class="notifications-header">
+                    <h3>Notifications</h3>
+                    <button class="btn-close" onclick="closeNotifications()">✕</button>
+                </div>
+                <div id="notificationsList" class="notifications-list">
+                    <!-- Items injected here -->
+                    <div class="loading">Loading...</div>
+                </div>
+                <div class="actions-footer">
+                    <button class="btn btn-text" onclick="markAllNotificationsRead()">Mark all as read</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Main Content -->
         <div class="main-content">
+            <!-- Notification Bell -->
+            <div id="notificationBtn" class="notification-btn" onclick="showNotifications()" style="display: none;">
+                <span>🔔</span>
+                <div id="notificationBadge" class="notification-badge badge-hidden">0</div>
+            </div>
+
             <!-- View Toggle -->
             <div class="view-toggle">
                 <button class="toggle-btn active" id="mapViewBtn" onclick="switchView('map')">
