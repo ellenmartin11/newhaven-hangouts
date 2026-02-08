@@ -59,14 +59,25 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # Initialize Firebase Admin SDK
 try:
-    # Check for service account key file
-    cred_path = os.getenv('FIREBASE_CREDENTIALS', 'serviceAccountKey.json')
-    if os.path.exists(cred_path):
-        cred = credentials.Certificate(cred_path)
+    # Check for environment variable first (for Vercel)
+    firebase_creds_json = os.getenv('FIREBASE_SERVICE_ACCOUNT_JSON')
+    
+    if firebase_creds_json:
+        # Parse JSON string from environment variable
+        import json
+        cred_dict = json.loads(firebase_creds_json)
+        cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully")
+        print("Firebase Admin SDK initialized from environment variable")
     else:
-        print(f"Warning: Firebase credentials not found at {cred_path}. Push notifications will not work.")
+        # Fallback to file (for local dev)
+        cred_path = os.getenv('FIREBASE_CREDENTIALS', 'serviceAccountKey.json')
+        if os.path.exists(cred_path):
+            cred = credentials.Certificate(cred_path)
+            firebase_admin.initialize_app(cred)
+            print(f"Firebase Admin SDK initialized from file: {cred_path}")
+        else:
+            print(f"Warning: Firebase credentials not found. Set FIREBASE_SERVICE_ACCOUNT_JSON env var or place {cred_path} locally.")
 except Exception as e:
     print(f"Error initializing Firebase: {e}")
 
