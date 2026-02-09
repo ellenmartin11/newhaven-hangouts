@@ -85,7 +85,6 @@ except Exception as e:
 # --- Helper Functions ---
 
 def send_push_notification(token, title, body, data=None):
-    """Send FCM push notification"""
     try:
         if not firebase_admin._apps:
             return
@@ -95,16 +94,18 @@ def send_push_notification(token, title, body, data=None):
                 title=title,
                 body=body,
             ),
-            data=data or {},
+            # Ensure all values in the data dict are strings
+            data={k: str(v) for k, v in (data or {}).items()}, 
             token=token,
             android=messaging.AndroidConfig(
+                priority='high', # This is for delivery speed
                 notification=messaging.AndroidNotification(
                     channel_id='hangouts_alerts',
-                    priority='high',
+                    notification_priority='high', # <-- Changed from 'priority'
                     default_sound=True,
-                    default_vibrate_timings=True
+                    default_vibrate_timings=True,
+                    visibility='public'
                 ),
-                priority='high'
             )
         )
         response = messaging.send(message)

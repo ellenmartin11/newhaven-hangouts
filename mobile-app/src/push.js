@@ -10,21 +10,30 @@ window.setupPushNotifications = async (userId) => {
     console.log('Initializing Push Notifications for user:', userId);
 
     try {
-        await PushNotifications.addListener('registration', token => {
+        await PushNotifications.addListener('registration', async token => {
             console.log('Push registration success, token: ' + token.value);
             // Send token to backend
-            fetch('/api/fcm-token', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    token: token.value,
-                    user_id: userId
-                })
-            }).then(res => res.json())
-                .then(data => console.log('Token saved:', data))
-                .catch(err => console.error('Error saving token:', err));
+            try {
+                const response = await fetch('/api/fcm-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: token.value,
+                        user_id: userId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                console.log('Token saved:', data);
+            } catch (err) {
+                console.error('Error saving token:', err);
+            }
         });
 
         await PushNotifications.addListener('registrationError', err => {
@@ -52,11 +61,28 @@ window.setupPushNotifications = async (userId) => {
         }
 
         if (permStatus.receive === 'granted') {
+            // 1. Create the channel FIRST (Android specific)
+            if (Capacitor.getPlatform() === 'android') {
+                await PushNotifications.createChannel({
+                    id: 'hangouts_alerts',
+                    name: 'Hangouts Alerts',
+                    importance: 5, // IMPORTANCE_HIGH (Required for banners)
+                    visibility: 1, // VISIBILITY_PUBLIC
+                    vibration: true,
+                });
+            }
+
+            // 2. Allow banners while the app is in the FOREGROUND
+            await PushNotifications.setPresentationOptions({
+                presentationOptions: ['alert', 'sound', 'badge'],
+            });
+
+            // 3. Finally, register for the token
             await PushNotifications.register();
+
         } else {
             console.log('Push permissions denied');
         }
-
     } catch (e) {
         console.error('Error setting up push:', e);
     }

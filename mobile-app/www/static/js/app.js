@@ -3,7 +3,8 @@
 // API Base URL configuration
 // For Android Emulator, we use 10.0.2.2 to access the host machine's localhost
 const isAndroid = /Android/i.test(navigator.userAgent);
-const API_BASE_URL = isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+// const API_BASE_URL = isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
+const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
 window.API_BASE_URL = API_BASE_URL;
 
 let map;

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HangApp | 2026 Roadmap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2d5a27;
+            /* Elm Green */
+            --secondary: #7e57c2;
+            /* Tech Purple */
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.6;
+            color: var(--text-main);
+            background-color: var(--bg);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 1rem;
+        }
+
+        .badge-dev {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        /* Market Trends Section */
+        .trends-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .trend-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .trend-card h3 {
+            color: var(--secondary);
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        /* Timeline Section */
+        .phase {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 3rem;
+            border-left: 2px solid var(--border);
+        }
+
+        .phase::before {
+            content: '';
+            position: absolute;
+            left: -9px;
+            top: 0;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 4px solid var(--bg);
+        }
+
+        .phase h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .phase ul {
+            list-style: none;
+        }
+
+        .phase li {
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .phase li::before {
+            content: '✓';
+            color: var(--primary);
+            margin-right: 0.75rem;
+            font-weight: bold;
+        }
+
+        /* Budget Table */
+        .budget-container {
+            background: var(--card-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            margin-top: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f1f5f9;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .status-pill {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            background: #e2e8f0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <header>
+            <h1>📍 HangOut</h1>
+            <p class="subtitle">New Haven Hangouts Product Roadmap</p>
+            <span class="badge badge-dev">Status: Development (Pre-Alpha)</span>
+        </header>
+
+        <section>
+            <h2 style="margin-bottom: 1.5rem;">2026 Market Context</h2>
+            <div class="trends-grid">
+                <div class="trend-card">
+                    <h3>Private Hubs</h3>
+                    <p>Moving away from public noise into trusted, circle-based location sharing.</p>
+                </div>
+                <div class="trend-card">
+                    <h3>Human Assurance</h3>
+                    <p>Authentic proof-of-presence at local New Haven staples to combat AI fatigue.</p>
+                </div>
+                <div class="trend-card">
+                    <h3>Sub-60s TTV</h3>
+                    <p>Ultra-lean UX designed to get users off the screen and into the coffee shop.</p>
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2 style="margin-bottom: 2rem;">Development Phases</h2>
+
+            <div class="phase">
+                <h2>Phase 1: Infrastructure & Core Logic</h2>
+                <ul>
+                    <li>Finalize FCM high-priority triggers for system banners.</li>
+                    <li>Implement foreground presentation options in Capacitor.</li>
+                    <li>Optimize Supabase Auth for "2-tap" onboarding.</li>
+                </ul>
+            </div>
+
+            <div class="phase">
+                <h2>Phase 2: The "Elm City" Alpha</h2>
+                <ul>
+                    <li>Fine-tune GPS polling for battery efficiency on local commutes.</li>
+                    <li>Refine "Private Hub" logic (Specific Friends vs. Groups).</li>
+                    <li>Conduct internal testing with New Haven community partners.</li>
+                </ul>
+            </div>
+
+            <div class="phase">
+                <h2>Phase 3: Deployment & Submission</h2>
+                <ul>
+                    <li>Apple Developer Program Submission ($99).</li>
+                    <li>Generate high-fidelity "Clean UI" store assets.</li>
+                    <li>Execute final QA via TestFlight and Google Internal tracks.</li>
+                </ul>
+            </div>
+
+            <div class="phase">
+                <h2>Phase 4: Community Seeding</h2>
+                <ul>
+                    <li>Soft launch at New Haven arts and sketch meetups.</li>
+                    <li>Deploy QR-code physical markers at partner locations.</li>
+                    <li>Open direct feedback loop for local location requests.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>Bootstrap Budget Allocation</h2>
+            <div class="budget-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Cost (USD)</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Google Play Console</td>
+                            <td>$25.00</td>
+                            <td><span class="status-pill">Pending</span></td>
+                        </tr>
+                        <tr>
+                            <td>Apple Developer Program</td>
+                            <td>$99.00</td>
+                            <td><span class="status-pill">Pending</span></td>
+                        </tr>
+                        <tr>
+                            <td>Hosting & Backend</td>
+                            <td>$0.00</td>
+                            <td><span class="status-pill" style="background:#dcfce7; color:#166534;">Free Tier</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Total Remaining</strong></td>
+                            <td><strong>$76.00</strong></td>
+                            <td>--</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer>
+            <p>&copy; 2026 HangOut New Haven | Developed by Ellen Jane Martin</p>
+        </footer>
+    </div>
+
+</body>
+
+</html>
