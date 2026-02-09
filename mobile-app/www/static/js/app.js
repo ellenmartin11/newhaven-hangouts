@@ -1,17 +1,15 @@
 // New Haven Hangouts - Frontend Application Logic
 
-// API Base URL configuration
-// For Android Emulator, we use 10.0.2.2 to access the host machine's localhost
-const isAndroid = /Android/i.test(navigator.userAgent);
-// const API_BASE_URL = isAndroid ? 'http://10.0.2.2:8000' : 'http://localhost:8000';
-const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
-window.API_BASE_URL = API_BASE_URL;
-
 let map;
 let userId = null;
 let username = null;
 let currentLocation = null;
 let markers = [];
+
+// API Configuration
+// For Android Emulator, use 'http://10.0.2.2:8000'
+// For Web/Production, use '' (relative path)
+const API_BASE_URL = window.Capacitor ? 'http://10.0.2.2:8000' : '';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
@@ -20,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Check if user is logged in (session-based)
     try {
-        const response = await fetch(API_BASE_URL + '/api/current_user');
+        const response = await fetch(`${API_BASE_URL}/api/current_user`, { credentials: 'include' });
         if (response.ok) {
             const data = await response.json();
             userId = data.user_id;
@@ -51,9 +49,10 @@ document.addEventListener('DOMContentLoaded', async function () {
 // Helper for auto-login
 async function autoLogin(email, password) {
     try {
-        const response = await fetch(API_BASE_URL + '/api/login', {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email, password, remember: true })
         });
 
@@ -188,9 +187,10 @@ async function requestPasswordReset() {
     messageEl.innerHTML = '<span style="color: var(--text-secondary);">Sending...</span>';
 
     try {
-        const response = await fetch(API_BASE_URL + '/api/auth/reset-password-request', {
+        const response = await fetch(`${API_BASE_URL}/api/auth/reset-password-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email })
         });
 
@@ -219,11 +219,12 @@ async function performLogin() {
     }
 
     try {
-        const response = await fetch(API_BASE_URL + '/api/login', {
+        const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ email, password, remember: rememberMe })
         });
 
@@ -283,11 +284,12 @@ async function performSignup() {
     }
 
     try {
-        const response = await fetch(API_BASE_URL + '/api/signup', {
+        const response = await fetch(`${API_BASE_URL}/api/signup`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 username: signupUsername,
                 email: signupEmail,
@@ -317,11 +319,10 @@ async function performSignup() {
         messageEl.innerHTML = '<span class="error">Signup failed. Please try again.</span>';
     }
 }
-
 // Logout function
 async function logout() {
     try {
-        await fetch(API_BASE_URL + '/api/logout', { method: 'POST' });
+        await fetch(`${API_BASE_URL}/api/logout`, { method: 'POST', credentials: 'include' });
     } catch (error) {
         console.error('Logout error:', error);
     }
@@ -345,7 +346,7 @@ async function deleteAccount() {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(API_BASE_URL + '/api/user/delete', { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/user/delete`, { method: 'DELETE', credentials: 'include' });
 
         if (response.ok) {
             alert("Your account has been deleted. Goodbye! 👋");
@@ -415,7 +416,7 @@ async function loadFeed() {
     if (!userId) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/feed?user_id=${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/feed?user_id=${userId}`, { credentials: 'include' });
         const data = await response.json();
 
         if (response.ok) {
@@ -628,7 +629,7 @@ let cachedFriends = [];
 async function loadFriendsForSelection() {
     const container = document.getElementById('friendsCheckboxes');
     try {
-        const response = await fetch(API_BASE_URL + '/api/friends');
+        const response = await fetch(`${API_BASE_URL}/api/friends`, { credentials: 'include' });
         const data = await response.json();
 
         if (response.ok) {
@@ -709,11 +710,12 @@ async function submitCheckin() {
     }
 
     try {
-        const response = await fetch(API_BASE_URL + '/api/checkin', {
+        const response = await fetch(`${API_BASE_URL}/api/checkin`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 user_id: userId,
                 lat: parseFloat(selectedLat),
@@ -952,7 +954,7 @@ async function setCurrentLocationAsCheckin() {
 // Mark as coming to a check-in
 async function imComing(checkinId) {
     try {
-        const response = await fetch(API_BASE_URL + '/api/coming', {
+        const response = await fetch('/api/coming', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -984,7 +986,7 @@ async function deleteCheckin(checkinId) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/checkin/${checkinId}`, {
+        const response = await fetch(`/api/checkin/${checkinId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -1035,7 +1037,7 @@ async function loadNotifications() {
     if (!userId) return;
 
     try {
-        const response = await fetch(API_BASE_URL + '/api/notifications');
+        const response = await fetch('/api/notifications');
         const data = await response.json();
 
         if (response.ok) {
@@ -1107,7 +1109,7 @@ function closeNotifications() {
 
 async function markAllNotificationsRead() {
     try {
-        await fetch(API_BASE_URL + '/api/notifications/mark-read', {
+        await fetch(`${API_BASE_URL}/api/notifications/mark-read`, {
             method: 'POST',
             body: JSON.stringify({ all: true }),
             headers: { 'Content-Type': 'application/json' }
@@ -1121,7 +1123,7 @@ async function markAllNotificationsRead() {
 async function handleNotificationClick(nid, relatedId, type) {
     // Mark as read
     try {
-        fetch(API_BASE_URL + '/api/notifications/mark-read', {
+        fetch(`${API_BASE_URL}/api/notifications/mark-read`, {
             method: 'POST',
             body: JSON.stringify({ notification_id: nid }),
             headers: { 'Content-Type': 'application/json' }

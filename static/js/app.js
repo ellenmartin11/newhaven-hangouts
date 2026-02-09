@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
     // Check if user is logged in (session-based)
     try {
-        const response = await fetch(`${API_BASE_URL}/api/current_user`);
+        const response = await fetch(`${API_BASE_URL}/api/current_user`, { credentials: 'include' });
         if (response.ok) {
             const data = await response.json();
             userId = data.user_id;
@@ -52,6 +52,7 @@ async function autoLogin(email, password) {
         const response = await fetch(`${API_BASE_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email, password, remember: true })
         });
 
@@ -189,6 +190,7 @@ async function requestPasswordReset() {
         const response = await fetch(`${API_BASE_URL}/api/auth/reset-password-request`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
             body: JSON.stringify({ email })
         });
 
@@ -222,6 +224,7 @@ async function performLogin() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({ email, password, remember: rememberMe })
         });
 
@@ -286,6 +289,7 @@ async function performSignup() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 username: signupUsername,
                 email: signupEmail,
@@ -318,7 +322,7 @@ async function performSignup() {
 // Logout function
 async function logout() {
     try {
-        await fetch(`${API_BASE_URL}/api/logout`, { method: 'POST' });
+        await fetch(`${API_BASE_URL}/api/logout`, { method: 'POST', credentials: 'include' });
     } catch (error) {
         console.error('Logout error:', error);
     }
@@ -342,7 +346,7 @@ async function deleteAccount() {
     if (!confirmed) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/user/delete`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE_URL}/api/user/delete`, { method: 'DELETE', credentials: 'include' });
 
         if (response.ok) {
             alert("Your account has been deleted. Goodbye! 👋");
@@ -412,7 +416,7 @@ async function loadFeed() {
     if (!userId) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/feed?user_id=${userId}`);
+        const response = await fetch(`${API_BASE_URL}/api/feed?user_id=${userId}`, { credentials: 'include' });
         const data = await response.json();
 
         if (response.ok) {
@@ -625,7 +629,7 @@ let cachedFriends = [];
 async function loadFriendsForSelection() {
     const container = document.getElementById('friendsCheckboxes');
     try {
-        const response = await fetch(`${API_BASE_URL}/api/friends`);
+        const response = await fetch(`${API_BASE_URL}/api/friends`, { credentials: 'include' });
         const data = await response.json();
 
         if (response.ok) {
@@ -711,6 +715,7 @@ async function submitCheckin() {
             headers: {
                 'Content-Type': 'application/json'
             },
+            credentials: 'include',
             body: JSON.stringify({
                 user_id: userId,
                 lat: parseFloat(selectedLat),

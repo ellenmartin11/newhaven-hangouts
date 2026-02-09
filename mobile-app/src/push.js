@@ -64,8 +64,8 @@ window.setupPushNotifications = async (userId) => {
             // 1. Create the channel FIRST (Android specific)
             if (Capacitor.getPlatform() === 'android') {
                 await PushNotifications.createChannel({
-                    id: 'hangouts_alerts',
-                    name: 'Hangouts Alerts',
+                    id: 'hangouts_alerts_v2',
+                    name: 'Hangouts Alerts V2',
                     importance: 5, // IMPORTANCE_HIGH (Required for banners)
                     visibility: 1, // VISIBILITY_PUBLIC
                     vibration: true,
