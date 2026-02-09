@@ -2,6 +2,12 @@
 
 A mobile-first location-based social application where users can check in to locations in New Haven, CT and see where their friends are hanging out. I am an independent developer, and this app is entirely non-profit. 
 
+## Docs
+- Privacy Policy: [Privacy Policy](https://ellenmartin11.github.io/newhaven-hangouts/privacy-policy.html)
+- Terms of Service: [Terms of Service](https://ellenmartin11.github.io/newhaven-hangouts/terms-of-service.html)
+- Product Roadmap: [Product Roadmap](https://ellenmartin11.github.io/newhaven-hangouts/HangOut-2025-roadmap.html)
+
+
 ## ✨ Features
 
 - 🔐 **Email Authentication**: Secure signup and login with email and password
