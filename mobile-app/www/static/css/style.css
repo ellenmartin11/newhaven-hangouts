@@ -1079,7 +1079,7 @@ body {
     }
 
     .view-toggle {
-        top: 0.75rem;
+        top: calc(4rem + env(safe-area-inset-top));
     }
 
     .toggle-btn {

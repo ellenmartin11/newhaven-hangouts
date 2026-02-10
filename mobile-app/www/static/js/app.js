@@ -9,7 +9,7 @@ let markers = [];
 // API Configuration
 // For Android Emulator, use 'http://10.0.2.2:8000'
 // For Web/Production, use '' (relative path)
-const API_BASE_URL = window.Capacitor ? 'http://10.0.2.2:8000' : '';
+const API_BASE_URL = window.Capacitor ? 'https://newhaven-hangouts.vercel.app' : '';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
@@ -64,7 +64,7 @@ async function autoLogin(email, password) {
             document.getElementById('loginModal').style.display = 'none';
             initMap();
             startNotificationPolling();
-            if (window.setupPushNotifications) window.setupPushNotifications(userId);
+            if (window.setupPushNotifications) window.setupPushNotifications(userId, API_BASE_URL);
         } else {
             localStorage.removeItem('rememberedPassword');
             document.getElementById('loginModal').style.display = 'flex';
@@ -250,7 +250,7 @@ async function performLogin() {
             // Initialize map
             initMap();
             startNotificationPolling();
-            if (window.setupPushNotifications) window.setupPushNotifications(userId);
+            if (window.setupPushNotifications) window.setupPushNotifications(userId, API_BASE_URL);
         } else {
             messageEl.innerHTML = `<span class="error">${data.error}</span>`;
         }
@@ -954,7 +954,7 @@ async function setCurrentLocationAsCheckin() {
 // Mark as coming to a check-in
 async function imComing(checkinId) {
     try {
-        const response = await fetch('/api/coming', {
+        const response = await fetch(`${API_BASE_URL}/api/coming`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -986,7 +986,7 @@ async function deleteCheckin(checkinId) {
     }
 
     try {
-        const response = await fetch(`/api/checkin/${checkinId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/checkin/${checkinId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -1037,7 +1037,7 @@ async function loadNotifications() {
     if (!userId) return;
 
     try {
-        const response = await fetch('/api/notifications');
+        const response = await fetch(`${API_BASE_URL}/api/notifications`);
         const data = await response.json();
 
         if (response.ok) {

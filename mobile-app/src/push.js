@@ -1,20 +1,20 @@
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 
-window.setupPushNotifications = async (userId) => {
+window.setupPushNotifications = async (userId, apiBaseUrl) => {
     if (!Capacitor.isNativePlatform()) {
         console.log('Push notifications not supported on web');
         return;
     }
 
-    console.log('Initializing Push Notifications for user:', userId);
+    console.log('Initializing Push Notifications for user:', userId, 'Base URL:', apiBaseUrl);
 
     try {
         await PushNotifications.addListener('registration', async token => {
             console.log('Push registration success, token: ' + token.value);
             // Send token to backend
             try {
-                const response = await fetch('/api/fcm-token', {
+                const response = await fetch(`${apiBaseUrl}/api/fcm-token`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
