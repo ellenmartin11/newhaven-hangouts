@@ -1002,7 +1002,7 @@ async function setCurrentLocationAsCheckin() {
 // Mark as coming to a check-in
 async function imComing(checkinId) {
     try {
-        const response = await fetch('/api/coming', {
+        const response = await fetch(`${API_BASE_URL}/api/coming`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1034,7 +1034,7 @@ async function deleteCheckin(checkinId) {
     }
 
     try {
-        const response = await fetch(`/api/checkin/${checkinId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/checkin/${checkinId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -1085,7 +1085,7 @@ async function loadNotifications() {
     if (!userId) return;
 
     try {
-        const response = await fetch('/api/notifications');
+        const response = await fetch(`${API_BASE_URL}/api/notifications`);
         const data = await response.json();
 
         if (response.ok) {
