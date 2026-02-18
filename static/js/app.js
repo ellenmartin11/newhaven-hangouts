@@ -9,7 +9,7 @@ let markers = [];
 // API Configuration
 // For Android Emulator, use 'http://10.0.2.2:8000'
 // For Web/Production, use '' (relative path)
-const API_BASE_URL = window.Capacitor ? 'http://10.0.2.2:8000' : '';
+const API_BASE_URL = window.Capacitor ? 'https://newhaven-hangouts.vercel.app' : '';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {

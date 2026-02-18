@@ -4,10 +4,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchStats() {
     try {
-        const response = await fetch('/api/stats/user');
+        const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '';
+        const response = await fetch(`${baseUrl}/api/stats/user`);
 
         if (response.status === 401) {
-            window.location.href = '/';
+            window.location.href = 'index.html';
             return;
         }
 

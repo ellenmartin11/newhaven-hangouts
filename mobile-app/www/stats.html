@@ -312,14 +312,26 @@
     <script src="static/js/stats.js"></script>
     <script>
         // Simple auth check to get username for header
-        fetch('/api/current_user')
-            .then(res => {
-                if (!res.ok) window.location.href = '/';
-                return res.json();
-            })
-            .then(data => {
-                document.getElementById('usernameDisplay').textContent = data.username;
-            });
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                // Ensure API_BASE_URL is available (from app.js)
+                const baseUrl = (typeof API_BASE_URL !== 'undefined') ? API_BASE_URL : '';
+
+                const response = await fetch(`${baseUrl}/api/current_user`, { credentials: 'include' });
+
+                if (!response.ok) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+
+                const data = await response.json();
+                const display = document.getElementById('usernameDisplay');
+                if (display) display.textContent = data.username;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location.href = 'index.html';
+            }
+        });
     </script>
 </body>
 

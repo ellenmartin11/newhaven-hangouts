@@ -3,10 +3,7 @@
  * Handles friend requests and friend list management
  */
 
-// For Production (Vercel)
-const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
-// For Local Dev / Simulator
-// const API_BASE_URL = 'http://192.168.68.109:8000';
+const API_BASE_URL = window.Capacitor ? 'https://newhaven-hangouts.vercel.app' : '';
 
 // Check authentication on page load
 window.addEventListener('DOMContentLoaded', async () => {

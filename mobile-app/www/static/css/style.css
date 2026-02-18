@@ -1938,8 +1938,8 @@ body {
 
 .popular-badge {
     display: inline-block;
-    background: #FFD700;
-    color: #3d3d3d;
+    background: var(--primary-color);
+    color: white;
     font-size: 0.7rem;
     padding: 2px 6px;
     border-radius: 10px;
