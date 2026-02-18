@@ -721,7 +721,7 @@ body {
 /* View Toggle - Glassmorphism */
 .view-toggle {
     position: absolute;
-    top: calc(12rem + env(safe-area-inset-top));
+    top: 1.25rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1500;
@@ -1901,4 +1901,48 @@ body {
     padding: 1rem;
     border-top: 1px solid rgba(0, 0, 0, 0.05);
     text-align: center;
+}
+
+/* Popular Location Marker */
+.popular-location-icon {
+    background: linear-gradient(135deg, #FF6B9D 0%, #FF9A6C 100%);
+    color: white;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    border: 3px solid white;
+    box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
+    animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.popular-popup {
+    text-align: center;
+}
+
+.popular-badge {
+    display: inline-block;
+    background: #FFD700;
+    color: #3d3d3d;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+    margin-bottom: 4px;
+    font-weight: 700;
 }

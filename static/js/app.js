@@ -409,6 +409,9 @@ function initMap() {
 
     // Load check-ins
     loadFeed();
+
+    // Load popular locations
+    loadPopularLocations();
 }
 
 // Load check-ins feed
@@ -557,6 +560,51 @@ function addCheckinMarker(checkin) {
     });
 
     markers.push(marker);
+}
+
+// Load popular locations
+async function loadPopularLocations() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/locations/popular`);
+        if (response.ok) {
+            const locations = await response.json();
+            locations.forEach(loc => {
+                addPopularLocationMarker(loc);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading popular locations:', error);
+    }
+}
+
+// Add popular location marker
+function addPopularLocationMarker(location) {
+    if (!map) return;
+
+    // Get first letter
+    const letter = location.name.charAt(0).toUpperCase();
+
+    const marker = L.marker([location.lat, location.lng], {
+        icon: L.divIcon({
+            className: 'popular-marker-container', // Wrapper class if needed, or just use divIcon properties
+            html: `<div class="popular-location-icon">${letter}</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        })
+    }).addTo(map);
+
+    const popupContent = `
+        <div class="popular-popup">
+            <span class="popular-badge">POPULAR SPOT</span>
+            <h4>${location.name}</h4>
+            <p>${location.count} check-ins all time</p>
+        </div>
+    `;
+
+    marker.bindPopup(popupContent, {
+        closeButton: false,
+        className: 'custom-popup'
+    });
 }
 
 // Format timestamp

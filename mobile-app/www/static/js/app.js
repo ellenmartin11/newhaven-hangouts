@@ -9,7 +9,7 @@ let markers = [];
 // API Configuration
 // For Android Emulator, use 'http://10.0.2.2:8000'
 // For Web/Production, use '' (relative path)
-const API_BASE_URL = window.Capacitor ? 'https://newhaven-hangouts.vercel.app' : '';
+const API_BASE_URL = window.Capacitor ? 'http://10.0.2.2:8000' : '';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
@@ -64,7 +64,7 @@ async function autoLogin(email, password) {
             document.getElementById('loginModal').style.display = 'none';
             initMap();
             startNotificationPolling();
-            if (window.setupPushNotifications) window.setupPushNotifications(userId, API_BASE_URL);
+            if (window.setupPushNotifications) window.setupPushNotifications(userId);
         } else {
             localStorage.removeItem('rememberedPassword');
             document.getElementById('loginModal').style.display = 'flex';
@@ -250,7 +250,7 @@ async function performLogin() {
             // Initialize map
             initMap();
             startNotificationPolling();
-            if (window.setupPushNotifications) window.setupPushNotifications(userId, API_BASE_URL);
+            if (window.setupPushNotifications) window.setupPushNotifications(userId);
         } else {
             messageEl.innerHTML = `<span class="error">${data.error}</span>`;
         }
@@ -409,6 +409,9 @@ function initMap() {
 
     // Load check-ins
     loadFeed();
+
+    // Load popular locations
+    loadPopularLocations();
 }
 
 // Load check-ins feed
@@ -557,6 +560,51 @@ function addCheckinMarker(checkin) {
     });
 
     markers.push(marker);
+}
+
+// Load popular locations
+async function loadPopularLocations() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/locations/popular`);
+        if (response.ok) {
+            const locations = await response.json();
+            locations.forEach(loc => {
+                addPopularLocationMarker(loc);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading popular locations:', error);
+    }
+}
+
+// Add popular location marker
+function addPopularLocationMarker(location) {
+    if (!map) return;
+
+    // Get first letter
+    const letter = location.name.charAt(0).toUpperCase();
+
+    const marker = L.marker([location.lat, location.lng], {
+        icon: L.divIcon({
+            className: 'popular-marker-container', // Wrapper class if needed, or just use divIcon properties
+            html: `<div class="popular-location-icon">${letter}</div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 16]
+        })
+    }).addTo(map);
+
+    const popupContent = `
+        <div class="popular-popup">
+            <span class="popular-badge">POPULAR SPOT</span>
+            <h4>${location.name}</h4>
+            <p>${location.count} check-ins all time</p>
+        </div>
+    `;
+
+    marker.bindPopup(popupContent, {
+        closeButton: false,
+        className: 'custom-popup'
+    });
 }
 
 // Format timestamp
@@ -954,7 +1002,7 @@ async function setCurrentLocationAsCheckin() {
 // Mark as coming to a check-in
 async function imComing(checkinId) {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/coming`, {
+        const response = await fetch('/api/coming', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -986,7 +1034,7 @@ async function deleteCheckin(checkinId) {
     }
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/checkin/${checkinId}`, {
+        const response = await fetch(`/api/checkin/${checkinId}`, {
             method: 'DELETE',
             headers: {
                 'Content-Type': 'application/json'
@@ -1037,7 +1085,7 @@ async function loadNotifications() {
     if (!userId) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/notifications`);
+        const response = await fetch('/api/notifications');
         const data = await response.json();
 
         if (response.ok) {

@@ -502,15 +502,121 @@ def get_user_stats():
                 'location_name': top_place_data[0][0],
                 'count': top_place_data[0][1]
             }
+
+        # 4. Top Hanger (Friend you've interacted with most)
+        # Interaction = (They attended your check-in) + (You attended their check-in)
+        
+        # A. Get IDs of friends who attended YOUR check-ins
+        your_checkin_ids = supabase.table('checkins').select('id').eq('user_id', current_user.id).execute()
+        your_ids = [c['id'] for c in your_checkin_ids.data]
+        
+        friends_attending_yours = []
+        if your_ids:
+            # Chunking might be needed if user has many checkins, but for MVP fetching all attendees
+            # tied to these checkins is okay.
+            att_response = supabase.table('attendees').select('user_id').in_('checkin_id', your_ids).execute()
+            friends_attending_yours = [a['user_id'] for a in att_response.data]
+            
+        # B. Get IDs of check-ins YOU attended
+        your_attendance = supabase.table('attendees').select('checkin_id').eq('user_id', current_user.id).execute()
+        attended_checkin_ids = [a['checkin_id'] for a in your_attendance.data]
+        
+        friends_you_attended = []
+        if attended_checkin_ids:
+            # Get the owners (users) of these check-ins
+            owners_resp = supabase.table('checkins').select('user_id').in_('id', attended_checkin_ids).execute()
+            friends_you_attended = [o['user_id'] for o in owners_resp.data]
+            
+        # Combine and count
+        all_interactions = friends_attending_yours + friends_you_attended
+        # Filter out self if any data inconsistencies (though users shouldn't attend own check-ins usually)
+        all_interactions = [uid for uid in all_interactions if uid != current_user.id]
+        
+        top_hanger = None
+        if all_interactions:
+            interaction_counts = Counter(all_interactions)
+            top_friend_id, count = interaction_counts.most_common(1)[0]
+            
+            # Get friend's details
+            friend_user = supabase.table('users').select('username').eq('id', top_friend_id).execute()
+            if friend_user.data:
+                top_hanger = {
+                    'username': friend_user.data[0]['username'],
+                    'count': count
+                }
             
         return jsonify({
             'total_checkins': total_checkins,
             'favorite_places': favorite_places,
-            'community_top_place': community_top_place
+            'community_top_place': community_top_place,
+            'top_hanger': top_hanger
         }), 200
         
     except Exception as e:
         print(f"Error fetching stats: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/locations/popular', methods=['GET'])
+def get_popular_locations():
+    """
+    Get top 5 popular locations for the map bubbles
+    Returns: [
+        {"name": "Koffee", "count": 25, "lat": 41.3, "lng": -72.9},
+        ...
+    ]
+    """
+    try:
+        # Fetch recent check-ins to aggregate popularity
+        # We need location_name and coordinates (from geom or lat/lng if we stored separately, 
+        # but we currently store geom).
+        # We'll fetch a batch.
+        response = supabase.table('checkins').select('location_name, geom').order('created_at', desc=True).limit(2000).execute()
+        
+        if not response.data:
+            return jsonify([]), 200
+            
+        # Aggregation
+        location_counts = {}
+        location_coords = {} # Store last seen coords for each location
+        
+        from collections import Counter
+        
+        for checkin in response.data:
+            name = checkin.get('location_name')
+            if not name: continue
+            
+            # Count
+            location_counts[name] = location_counts.get(name, 0) + 1
+            
+            # Store coords if not already stored (or update to latest? latest is better actually since we ordered desc)
+            if name not in location_coords:
+                geom = checkin.get('geom')
+                lat, lng = 0, 0
+                if isinstance(geom, dict) and 'coordinates' in geom:
+                    lng, lat = geom['coordinates']
+                # Store valid coords
+                if lat != 0 or lng != 0:
+                    location_coords[name] = {'lat': lat, 'lng': lng}
+        
+        # Sort by count
+        sorted_locations = sorted(location_counts.items(), key=lambda x: x[1], reverse=True)
+        top_5 = sorted_locations[:5]
+        
+        results = []
+        for name, count in top_5:
+            if name in location_coords:
+                results.append({
+                    'name': name,
+                    'count': count,
+                    'lat': location_coords[name]['lat'],
+                    'lng': location_coords[name]['lng']
+                })
+                
+        return jsonify(results), 200
+        
+    except Exception as e:
+        print(f"Error fetching popular locations: {e}")
         return jsonify({'error': str(e)}), 500
 
 

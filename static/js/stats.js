@@ -58,6 +58,18 @@ function renderStats(data) {
         });
     }
 
+    // 4. Top Hanger
+    const topHangerName = document.getElementById('topHangerName');
+    const topHangerCount = document.getElementById('topHangerCount');
+
+    if (data.top_hanger) {
+        topHangerName.textContent = escapeHtml(data.top_hanger.username);
+        topHangerCount.textContent = `${data.top_hanger.count} shared check-ins`;
+    } else {
+        topHangerName.textContent = "None yet";
+        topHangerCount.textContent = "Start hanging out with friends!";
+    }
+
     // 3. Community Top Spot
     const communityContainer = document.getElementById('communityTopSpot');
     communityContainer.innerHTML = '';

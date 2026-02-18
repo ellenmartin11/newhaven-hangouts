@@ -1,18 +1,13 @@
-// For Production (Vercel)
-const API_BASE_URL = 'https://newhaven-hangouts.vercel.app';
-// For Local Dev / Simulator
-// const API_BASE_URL = 'http://192.168.68.109:8000';
-
 document.addEventListener('DOMContentLoaded', () => {
     fetchStats();
 });
 
 async function fetchStats() {
     try {
-        const response = await fetch(`${API_BASE_URL}/api/stats/user`, { credentials: 'include' });
+        const response = await fetch('/api/stats/user');
 
         if (response.status === 401) {
-            window.location.href = 'index.html';
+            window.location.href = '/';
             return;
         }
 
@@ -61,6 +56,18 @@ function renderStats(data) {
             `;
             favoritesContainer.appendChild(placeItem);
         });
+    }
+
+    // 4. Top Hanger
+    const topHangerName = document.getElementById('topHangerName');
+    const topHangerCount = document.getElementById('topHangerCount');
+
+    if (data.top_hanger) {
+        topHangerName.textContent = escapeHtml(data.top_hanger.username);
+        topHangerCount.textContent = `${data.top_hanger.count} shared check-ins`;
+    } else {
+        topHangerName.textContent = "None yet";
+        topHangerCount.textContent = "Start hanging out with friends!";
     }
 
     // 3. Community Top Spot
