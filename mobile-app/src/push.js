@@ -10,6 +10,17 @@ window.setupPushNotifications = async (userId, apiBaseUrl) => {
     console.log('Initializing Push Notifications for user:', userId, 'Base URL:', apiBaseUrl);
 
     try {
+        // 1. Create the channel FIRST (Android specific) - MOVED TO TOP
+        if (Capacitor.getPlatform() === 'android') {
+            await PushNotifications.createChannel({
+                id: 'hangouts_alerts_v2',
+                name: 'Hangouts Alerts V2',
+                importance: 5, // IMPORTANCE_HIGH (Required for banners)
+                visibility: 1, // VISIBILITY_PUBLIC
+                vibration: true,
+            });
+        }
+
         await PushNotifications.addListener('registration', async token => {
             console.log('Push registration success, token: ' + token.value);
             // Send token to backend
@@ -61,17 +72,6 @@ window.setupPushNotifications = async (userId, apiBaseUrl) => {
         }
 
         if (permStatus.receive === 'granted') {
-            // 1. Create the channel FIRST (Android specific)
-            if (Capacitor.getPlatform() === 'android') {
-                await PushNotifications.createChannel({
-                    id: 'hangouts_alerts_v2',
-                    name: 'Hangouts Alerts V2',
-                    importance: 5, // IMPORTANCE_HIGH (Required for banners)
-                    visibility: 1, // VISIBILITY_PUBLIC
-                    vibration: true,
-                });
-            }
-
             // 2. Allow banners while the app is in the FOREGROUND
             await PushNotifications.setPresentationOptions({
                 presentationOptions: ['alert', 'sound', 'badge'],
