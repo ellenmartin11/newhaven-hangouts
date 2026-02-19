@@ -27,6 +27,7 @@ window.setupPushNotifications = async (userId, apiBaseUrl) => {
             try {
                 const response = await fetch(`${apiBaseUrl}/api/fcm-token`, {
                     method: 'POST',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json'
                     },
@@ -67,8 +68,9 @@ window.setupPushNotifications = async (userId, apiBaseUrl) => {
 
         // Request permissions
         let permStatus = await PushNotifications.checkPermissions();
-        if (permStatus.receive === 'prompt') {
-            permStatus = await PushNotifications.requestPermissions();
+        if (permStatus.receive !== 'granted') {
+            const newStatus = await PushNotifications.requestPermissions();
+            permStatus = newStatus;
         }
 
         if (permStatus.receive === 'granted') {

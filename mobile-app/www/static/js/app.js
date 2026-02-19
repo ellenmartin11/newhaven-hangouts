@@ -10,6 +10,7 @@ let markers = [];
 // For Android Emulator, use 'http://10.0.2.2:8000'
 // For Web/Production, use '' (relative path)
 const API_BASE_URL = window.Capacitor ? 'https://newhaven-hangouts.vercel.app' : '';
+// const API_BASE_URL = window.Capacitor ? 'http://10.0.2.2:8000' : '';
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', async function () {
@@ -27,6 +28,7 @@ document.addEventListener('DOMContentLoaded', async function () {
             document.getElementById('loginModal').style.display = 'none';
             initMap();
             startNotificationPolling();
+            if (window.setupPushNotifications) window.setupPushNotifications(userId, API_BASE_URL);
         } else {
             // No active session. Check for saved credentials for auto-login
             const savedEmail = localStorage.getItem('rememberedEmail');

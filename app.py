@@ -101,7 +101,6 @@ def send_push_notification(token, title, body, data=None):
                 priority='high', # This is for delivery speed
                 notification=messaging.AndroidNotification(
                     channel_id='hangouts_alerts_v2',
-                    notification_priority='PRIORITY_HIGH',
                     default_sound=True,
                     default_vibrate_timings=True,
                     visibility='public'
