@@ -1,16 +1,25 @@
 import { PushNotifications } from '@capacitor/push-notifications';
 import { Capacitor } from '@capacitor/core';
 
+let pushInitialized = false;
+
 window.setupPushNotifications = async (userId, apiBaseUrl) => {
     if (!Capacitor.isNativePlatform()) {
         console.log('Push notifications not supported on web');
         return;
     }
 
+    // Prevent multiple initializations (causes listener duplication and crashes)
+    if (pushInitialized) {
+        console.log('Push notifications already initialized, skipping.');
+        return;
+    }
+    pushInitialized = true;
+
     console.log('Initializing Push Notifications for user:', userId, 'Base URL:', apiBaseUrl);
 
     try {
-        // 1. Create the channel FIRST (Android specific) - MOVED TO TOP
+        // 1. Create the channel FIRST (Android specific)
         if (Capacitor.getPlatform() === 'android') {
             await PushNotifications.createChannel({
                 id: 'hangouts_alerts_v2',
@@ -23,7 +32,6 @@ window.setupPushNotifications = async (userId, apiBaseUrl) => {
 
         await PushNotifications.addListener('registration', async token => {
             console.log('Push registration success, token: ' + token.value);
-            // Send token to backend
             try {
                 const response = await fetch(`${apiBaseUrl}/api/fcm-token`, {
                     method: 'POST',
@@ -54,38 +62,29 @@ window.setupPushNotifications = async (userId, apiBaseUrl) => {
 
         await PushNotifications.addListener('pushNotificationReceived', notification => {
             console.log('Push received: ', notification);
-            // Optionally convert to local toast or update UI
             if (window.loadNotifications) window.loadNotifications();
         });
 
         await PushNotifications.addListener('pushNotificationActionPerformed', notification => {
             console.log('Push action performed: ', notification);
-            // Navigate if needed
-            if (notification.notification.data.url) {
+            if (notification.notification.data && notification.notification.data.url) {
                 window.location.href = notification.notification.data.url;
             }
         });
 
-        // Request permissions
+        // Request permissions (only prompt if not yet decided)
         let permStatus = await PushNotifications.checkPermissions();
-        if (permStatus.receive !== 'granted') {
-            const newStatus = await PushNotifications.requestPermissions();
-            permStatus = newStatus;
+        if (permStatus.receive === 'prompt') {
+            permStatus = await PushNotifications.requestPermissions();
         }
 
         if (permStatus.receive === 'granted') {
-            // 2. Allow banners while the app is in the FOREGROUND
-            await PushNotifications.setPresentationOptions({
-                presentationOptions: ['alert', 'sound', 'badge'],
-            });
-
-            // 3. Finally, register for the token
             await PushNotifications.register();
-
         } else {
-            console.log('Push permissions denied');
+            console.log('Push permissions not granted:', permStatus.receive);
         }
     } catch (e) {
         console.error('Error setting up push:', e);
+        pushInitialized = false; // Allow retry on next login
     }
 };
