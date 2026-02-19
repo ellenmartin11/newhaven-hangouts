@@ -64,7 +64,7 @@ async function autoLogin(email, password) {
             document.getElementById('loginModal').style.display = 'none';
             initMap();
             startNotificationPolling();
-            if (window.setupPushNotifications) window.setupPushNotifications(userId);
+            if (window.setupPushNotifications) window.setupPushNotifications(userId, API_BASE_URL);
         } else {
             localStorage.removeItem('rememberedPassword');
             document.getElementById('loginModal').style.display = 'flex';
@@ -250,7 +250,7 @@ async function performLogin() {
             // Initialize map
             initMap();
             startNotificationPolling();
-            if (window.setupPushNotifications) window.setupPushNotifications(userId);
+            if (window.setupPushNotifications) window.setupPushNotifications(userId, API_BASE_URL);
         } else {
             messageEl.innerHTML = `<span class="error">${data.error}</span>`;
         }
